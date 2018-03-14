@@ -17,5 +17,9 @@ module.exports = {
       defaultUnit: 100000000,
       coinSymbol: 'BCN',
       coinName: 'ByteCoin'
+    },
+
+    daemon: {
+      endpoint: 'http://ec2-18-220-131-221.us-east-2.compute.amazonaws.com:8070/json_rpc'
     }
   };
