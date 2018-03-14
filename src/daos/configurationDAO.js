@@ -102,14 +102,14 @@ module.exports = function() {
 
     disable: function(id) {
       return new Promise(function(resolve, reject) {
-        logger.log('info', 'Disabling a mail template');
+        logger.log('info', 'Disabling a configuration');
 
         model.findByIdAndUpdate(id, {_id:id, isEnabled: false}, {'new': true, fields: projectionCommonFields})
         .then(function(item) {
-          logger.log('info', 'The mail template has been disabled succesfully');
+          logger.log('info', 'The configuration has been disabled succesfully');
           resolve(item.toObject());
         }).catch(function(error) {
-          logger.error('An error has ocurred while disabling a mail template', error);
+          logger.error('An error has ocurred while disabling a configuration', error);
           reject({
             status: 422,
             message: error

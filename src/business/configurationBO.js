@@ -121,11 +121,11 @@ module.exports = function(dependencies) {
       });
     },
 
-    delete: function(id) {
+    delete: function(key) {
       var self = this;
 
       return new Promise(function(resolve, reject) {
-        self.getById(id)
+        self.getByKey(key)
           .then(function(configuration) {
             if (!configuration) {
               throw {
@@ -133,7 +133,7 @@ module.exports = function(dependencies) {
                 message: 'Template not found'
               };
             } else {
-              return configurationDAO.disable(id);
+              return configurationDAO.disable(configuration.id);
             }
           })
           .then(resolve)
