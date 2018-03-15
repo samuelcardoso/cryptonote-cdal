@@ -130,7 +130,7 @@ module.exports = function(dependencies) {
             if (!configuration) {
               throw {
                 status: 404,
-                message: 'Template not found'
+                message: 'Configuration not found'
               };
             } else {
               return configurationDAO.disable(configuration.id);
