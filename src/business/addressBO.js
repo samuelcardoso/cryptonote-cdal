@@ -35,7 +35,6 @@ module.exports = function(dependencies) {
         chain
           .then(function() {
             logger.info('Requesting to the daemon a new address');
-            console.log('BBBBB', daemonHelper);
             return daemonHelper.createAddress();
           })
           .then(function(r) {
@@ -165,8 +164,12 @@ module.exports = function(dependencies) {
                 message: 'Address not found'
               };
             } else {
+              address.updatedAt = new Date();
               return addressDAO.disable(addresses.id);
             }
+          })
+          .then(function(address) {
+            return daemonHelper.deleteAddress(address.address);
           })
           .then(resolve)
           .catch(reject);

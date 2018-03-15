@@ -26,7 +26,7 @@ module.exports = function() {
 
     getAllByOwnerId: function(req, res) {
       var rh = new HTTPResponseHelper(req, res);
-      business.getAll({ownerId: req.param.ownerId})
+      business.getAll({ownerId: req.params.ownerId})
         .then(rh.ok)
         .catch(rh.error);
     },
@@ -54,7 +54,7 @@ module.exports = function() {
     getByAddress: function(req, res) {
       var rh = new HTTPResponseHelper(req, res);
 
-      business.getByKey(req.params.address, req.params.ownerId)
+      business.getByAddress(req.params.ownerId, req.params.address)
         .then(rh.ok)
         .catch(rh.error);
     },
