@@ -10,8 +10,6 @@ describe('api', function(){
     addressDAO: DAOFactory.getDAO('address')
   });
 
-  console.log(bo.dependencies.daemonHelper);
-
   before(function(){
     server = require('../../../src/server');
 

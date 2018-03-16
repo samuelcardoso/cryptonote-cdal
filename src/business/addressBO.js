@@ -27,9 +27,9 @@ module.exports = function(dependencies) {
       });
     },
 
-    createAddressFromDaemon: function() {
+    createAddressFromDaemon: function(ownerId) {
+      var self = this;
       var chain = Promise.resolve();
-      var address = null;
 
       return new Promise(function(resolve, reject) {
         chain
@@ -38,25 +38,43 @@ module.exports = function(dependencies) {
             return daemonHelper.createAddress();
           })
           .then(function(r) {
-            address = {
-              address: r.result.address
+            return self.registerAddressFromDaemon(ownerId, r.result.address);
+          })
+          .then(resolve)
+          .catch(reject);
+      });
+    },
+
+    registerAddressFromDaemon: function(ownerId, address) {
+      var chain = Promise.resolve();
+      var addressEntity = null;
+
+      return new Promise(function(resolve, reject) {
+        chain
+          .then(function() {
+            addressEntity = {
+              ownerId: ownerId,
+              address: address
             };
-            return daemonHelper.getSpendKeys(address.address);
+
+            logger.info('Getting keys from the address ', address);
+            return daemonHelper.getSpendKeys(address);
           })
           .then(function(r) {
-            address.keys = {
+            logger.info('Returned keys from address ', address, JSON.stringify(r));
+            addressEntity.keys = {
               spendPublicKey: r.result.spendPublicKey,
               spendSecretKey: r.result.spendSecretKey
             };
 
-            address.createdAt = new Date();
-            address.isEnabled = true;
-            address.balance = {
+            addressEntity.createdAt = new Date();
+            addressEntity.isEnabled = true;
+            addressEntity.balance = {
               availabe: 0,
               locked: 0
             };
 
-            return addressDAO.save(address);
+            return addressDAO.save(addressEntity);
           })
           .then(resolve)
           .catch(reject);
@@ -99,26 +117,39 @@ module.exports = function(dependencies) {
       });
     },
 
-    updateBalance: function(address, availabe, locked) {
+    updateBalance: function(address) {
       var self = this;
+      var addressEntity = null;
 
       return new Promise(function(resolve, reject) {
-        self.getByAddress(null, entity.address)
-          .then(function(addresses) {
-            if (addresses) {
-              o = modelParser.prepare(entity);
-              o.balance.availabe = availabe;
-              o.balance.locked = locked;
-              o.updatedAt = new Date();
-              return addressDAO.update(o);
+        self.getByAddress(null, address)
+          .then(function(r) {
+            if (r) {
+              return r;
             } else {
               throw {
                 status: 404,
-                message: 'The addresses ' + entity.address + ' was not found'
+                message: 'The address ' + address + ' was not found'
               };
             }
           })
           .then(function(r) {
+            addressEntity = r;
+            logger.info('Getting the balance to de address', address.address);
+            return daemonHelper.getBalance(r.address);
+          })
+          .then(function(r) {
+            logger.info('Actual balance to the address', addressEntity.address, JSON.stringify(r));
+
+            addressEntity = modelParser.prepare(addressEntity);
+            addressEntity.balance.availabe = r.result.availableBalance;
+            addressEntity.balance.lockedAmount = r.result.lockedAmount;
+            addressEntity.updatedAt = new Date();
+
+            return addressDAO.update(addressEntity);
+          })
+          .then(function(r) {
+            logger.info('The balance was updated successfully', JSON.stringify(r));
             return modelParser.clear(r);
           })
           .then(resolve)
