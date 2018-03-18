@@ -1,5 +1,6 @@
 var Promise         = require('promise');
 var logger          = require('../config/logger');
+var settings          = require('../config/settings');
 
 module.exports = function(dependencies) {
   var configurationDAO = dependencies.configurationDAO;
@@ -32,7 +33,7 @@ module.exports = function(dependencies) {
       return new Promise(function(resolve, reject) {
         self.getByKey(entity.key)
           .then(function(configuration) {
-            if (!configuration) {
+            if (!configuration.id) {
               logger.debug('Saving the configuration. Entity: ', JSON.stringify(entity));
               var o = modelParser.prepare(entity, true);
               o.createdAt = new Date();
@@ -52,17 +53,16 @@ module.exports = function(dependencies) {
       });
     },
 
-    saveOrUpdate: function(entity) {
+    initialize: function(entity) {
       var self = this;
 
       return new Promise(function(resolve, reject) {
         self.getByKey(entity.key)
           .then(function(configuration) {
-            if (!configuration) {
+            if (!configuration.id) {
               return self.save(entity);
             } else {
-              configuration.value = entity.value;
-              return self.update(configuration);
+              return configuration;
             }
           })
           .then(function(r) {
@@ -75,14 +75,14 @@ module.exports = function(dependencies) {
 
     update: function(entity) {
       var self = this;
-
       return new Promise(function(resolve, reject) {
         self.getByKey(entity.key)
           .then(function(configuration) {
-            if (configuration) {
+            if (configuration && configuration.id) {
               configuration = modelParser.prepare(configuration);
               configuration.updatedAt = new Date();
               configuration.value = entity.value;
+              logger.info('Updating configuration', JSON.stringify(configuration));
               return configurationDAO.update(configuration);
             } else {
               throw {
@@ -113,7 +113,10 @@ module.exports = function(dependencies) {
               logger.info('Configuration found by key', JSON.stringify(configurations[0]));
               return configurations[0];
             } else {
-              return null;
+              return {
+                key: key,
+                value: settings.defaultSettings[key]
+              };
             }
           })
           .then(resolve)

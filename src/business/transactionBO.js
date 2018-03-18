@@ -6,7 +6,11 @@ module.exports = function(dependencies) {
   var modelParser = dependencies.modelParser;
   var daemonHelper = dependencies.daemonHelper;
   var addressBO = dependencies.addressBO;
-  var addressDAO = addressBO.dependencies.addressDAO;
+  var addressBO = null;
+
+  if (addressBO) {
+    addressDAO = addressBO.dependencies.addressDAO;
+  }
 
   return {
     dependencies: dependencies,
@@ -17,7 +21,6 @@ module.exports = function(dependencies) {
 
     getAll: function(filter) {
       return new Promise(function(resolve, reject) {
-        filter.isEnabled = true;
         logger.info('Listing all transactions by filter ', JSON.stringify(filter));
         transactionDAO.getAll(filter)
           .then(function(r) {
@@ -101,6 +104,7 @@ module.exports = function(dependencies) {
             logger.info('Updating the addresses balances', JSON.stringify(r));
 
             for (var i = 0; i < r.length; i++) {
+              logger.info('Updating the address balance', r[i].address);
               p.push(addressBO.updateBalance(r[i].address));
             }
 
@@ -134,6 +138,94 @@ module.exports = function(dependencies) {
             } else {
               return null;
             }
+          })
+          .then(resolve)
+          .catch(reject);
+      });
+    },
+
+    updateTransactionFromBlockChain: function(transaction, blockchainTransaction) {
+      return new Promise(function(resolve, reject) {
+        console.log(123123);
+        transaction.blockIndex = blockchainTransaction.blockIndex;
+        transaction.timestamp = blockchainTransaction.timestamp;
+
+        var o = modelParser.prepare(transaction);
+
+        console.log(o);
+
+        transactionDAO.update(o)
+          .then(resolve)
+          .catch(reject);
+      });
+    },
+
+    createTransactionFromBlockChain: function(blockchainTransaction) {
+      return new Promise(function(resolve, reject) {
+        var t = {
+          anonymity: 0,
+          amount: blockchainTransaction.amount,
+          blockIndex: blockchainTransaction.blockIndex,
+          fee: blockchainTransaction.fee,
+          paymentId: blockchainTransaction.paymentId,
+          timestamp: blockchainTransaction.timestamp,
+          timestamp: blockchainTransaction.timestamp,
+          transactionHash: blockchainTransaction.transactionHash,
+          createdAt: new Date(),
+          isConfirmed: false,
+          isNotified: false,
+          confirmations: 0,
+          createdByBOS: true
+        };
+
+        if (blockchainTransaction.transfers.length > 0) {
+          logger.info('Updating informations about transfers.');
+          logger.info('First will be used as address and others put in transfers array');
+          t.addresses = [blockchainTransaction.transfers[0].address];
+          t.transfers = [];
+
+          logger.info('Putting the other transfers to transfers array');
+          for (var i = 1; i < blockchainTransaction.transfers.length; i++) {
+            t.transfers.push(blockchainTransaction.transfers[i]);
+          }
+        }
+        console.log(t);
+        transactionDAO.save(t)
+          .then(resolve)
+          .catch(reject);
+      });
+    },
+
+    parseTransaction: function(transaction) {
+      var self = this;
+
+      return new Promise(function(resolve, reject) {
+        var chain = Promise.resolve();
+
+        chain
+          .then(function() {
+            logger.info('Trying to get the transaction from database ', transaction.transactionHash);
+            return self.getByTransactionHash(null, transaction.transactionHash);
+          })
+          .then(function(r) {
+            if (r) {
+              logger.info('The transaction was found at database. Blockindex and timestamp will be updated',
+                transaction.transactionHash,
+                transaction.blockIndex,
+                transaction.blockIndex);
+
+              return self.updateTransactionFromBlockChain(r, transaction);
+            } else {
+              logger.info('The transaction was not found at database',
+                transaction.transactionHash,
+                transaction.blockIndex,
+                transaction.blockIndex);
+
+              return self.createTransactionFromBlockChain(transaction);
+            }
+          })
+          .then(function(r){
+            return modelParser.clear(r);
           })
           .then(resolve)
           .catch(reject);

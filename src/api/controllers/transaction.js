@@ -43,6 +43,13 @@ module.exports = function() {
         .catch(rh.error);
     },
 
+    getAllByAddress: function(req, res) {
+      var rh = new HTTPResponseHelper(req, res);
+      business.getAll({addresses: [req.params.address]})
+        .then(rh.ok)
+        .catch(rh.error);
+    },
+
     update: function(req, res) {
       var rh = new HTTPResponseHelper(req, res);
       req.body.key = req.params.key;

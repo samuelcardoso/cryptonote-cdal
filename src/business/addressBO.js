@@ -76,6 +76,9 @@ module.exports = function(dependencies) {
 
             return addressDAO.save(addressEntity);
           })
+          .then(function(r) {
+            return modelParser.clear(r);
+          })
           .then(resolve)
           .catch(reject);
       });
@@ -117,25 +120,58 @@ module.exports = function(dependencies) {
       });
     },
 
+    updateWalletBalance: function() {
+      var self = this;
+
+      return new Promise(function(resolve, reject) {
+        var chain = Promise.resolve();
+
+        chain
+          .then(function() {
+            logger.info('Getting addresses from daemon');
+            return daemonHelper.getAddresses();
+          })
+          .then(function(r) {
+            var addresses = r.result.addresses;
+            var p = [];
+
+            logger.info('Addresses returned from daemon', JSON.stringify(addresses.length));
+
+            for (var i = 0; i < addresses.length; i++) {
+              p.push(self.updateBalance(addresses[i]));
+            }
+
+            return Promise.all(p);
+          })
+          .then(resolve)
+          .catch(reject);
+      });
+    },
+
     updateBalance: function(address) {
       var self = this;
       var addressEntity = null;
 
       return new Promise(function(resolve, reject) {
-        self.getByAddress(null, address)
+        var chain = Promise.resolve();
+        logger.info('Trying to get address from database', address);
+
+        chain
+          .then(function() {
+            return self.getByAddress(null, address);
+          })
           .then(function(r) {
             if (r) {
+              logger.info('The address was found at database', address);
               return r;
             } else {
-              throw {
-                status: 404,
-                message: 'The address ' + address + ' was not found'
-              };
+              logger.info('The address was not found at database. It will be created from daemon', address);
+              return self.registerAddressFromDaemon(null, address);
             }
           })
           .then(function(r) {
             addressEntity = r;
-            logger.info('Getting the balance to de address', address.address);
+            logger.info('Getting the balance', address.address);
             return daemonHelper.getBalance(r.address);
           })
           .then(function(r) {
@@ -205,6 +241,6 @@ module.exports = function(dependencies) {
           .then(resolve)
           .catch(reject);
       });
-    }
+    },
   };
 };

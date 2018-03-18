@@ -11,6 +11,12 @@ module.exports = function(app) {
     .get(controller.getAllByOwnerId)
     .post(controller.save);
 
+  app.route('/v1/addresses/:address/transactions')
+    .get(controller.getAllByAddress);
+
+  app.route('/v1/:ownerId/addresses/:address/transactions')
+    .get(controller.getAllByAddress);
+
   app.route('/v1/:ownerId/transactions/:transactionHash')
     .get(controller.getByTransactionHash);
 };

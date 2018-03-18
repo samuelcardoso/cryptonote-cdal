@@ -65,13 +65,13 @@ module.exports = function(){
           },
         address: {
           type: String,
-          required: true
+          required: false
         }
       }
     ],
     changeAddress: {
       type: String,
-      required: true
+      required: false
     },
     createdAt: {
       type: Date,
@@ -79,6 +79,10 @@ module.exports = function(){
     },
     updatedAt: {
       type: Date,
+      required: false,
+    },
+    createdByBOS: {
+      type: Boolean,
       required: false,
     }
   });

@@ -47,7 +47,7 @@ describe('api', function(){
     });
 
     it('should create a new key when the specified key does not exist', function() {
-      return bo.saveOrUpdate({
+      return bo.initialize({
         key: 'newKey-2',
         value: 'newValue'
       })
@@ -60,7 +60,7 @@ describe('api', function(){
     });
 
     it('should update a new key when the specified key exists', function() {
-      return bo.saveOrUpdate({
+      return bo.initialize({
         key: 'newKey-2',
         value: 'newValue'
       })

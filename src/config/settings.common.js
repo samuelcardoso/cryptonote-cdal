@@ -15,11 +15,13 @@ module.exports = {
       minimumConfirmations: 3,
       transactionNotificationAPI: 'http://localhost/transactions-notifications',
       defaultUnit: 100000000,
-      coinSymbol: 'BCN',
-      coinName: 'ByteCoin'
+      coinSymbol: 'NBR',
+      coinName: 'Nióbio Cash',
+      currentBlockIndex: 0,
+      defaultTransactionsBlockCount: 5000
     },
 
     daemon: {
-      endpoint: 'http://bcndaemon:19264/json_rpc'
+      endpoint: 'http://52.224.12.189:19264/json_rpc'
     }
   };
