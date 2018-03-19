@@ -45,7 +45,14 @@ module.exports = function() {
 
     getAllByAddress: function(req, res) {
       var rh = new HTTPResponseHelper(req, res);
-      business.getAll({addresses: [req.params.address]})
+
+      var filter = {addresses: [req.params.address]};
+
+      if (req.params.ownerId) {
+        filter.ownerId = req.params.ownerId;
+      }
+
+      business.getAll(filter)
         .then(rh.ok)
         .catch(rh.error);
     },

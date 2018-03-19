@@ -6,9 +6,11 @@ var Starter = require('./starter');
 
 var server = http.createServer(app).listen(app.get('port'), function() {
     console.log('Express is running on port ' + app.get('port'));
+});
 
+if (process.env.NODE_ENV !== 'test'){
     var starter = new Starter();
     starter.configureApplication();
-});
+}
 
 module.exports = server;

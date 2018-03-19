@@ -4,6 +4,7 @@ var DAOFactory          = require('./daos/daoFactory');
 var ModelParser         = require('./models/modelParser');
 var logger              = require('./config/logger');
 var BOSWorker           = require('./workers/bosWorker');
+var AAPMSWorker         = require('./workers/aapmsWorker');
 var TransactionBO       = require('./business/transactionBO');
 var AddressBO           = require('./business/addressBO');
 var ConfigurationBO     = require('./business/configurationBO');
@@ -52,10 +53,13 @@ module.exports = function() {
         })
       }, true);
 
-      bosWorker.run()
-        .catch(function(r) {
-          throw r;
-        });
+      var aapmsWorker = new AAPMSWorker({
+        addressBO: addressBO,
+        configurationBO: configurationBO
+      });
+
+      bosWorker.run();
+      aapmsWorker.run();
     },
 
     configureDefaultSettings: function() {
@@ -82,22 +86,10 @@ module.exports = function() {
 
     configureApplication: function() {
       var self = this;
-      var chain = Promise.resolve();
-
-      if (process.env.NODE_ENV && process.env.NODE_ENV === 'test') {
-        return chain;
-      } else {
-        return chain
-          .then(function() {
-            return self.configureDefaultSettings();
-          })
-          .then(function() {
-            return self.runWorkers();
-          })
-          .catch(function(r) {
-            console.log(r);
-          });
-      }
+      this.configureDefaultSettings()
+        .then(function() {
+          self.runWorkers();
+        });
     }
   };
 };

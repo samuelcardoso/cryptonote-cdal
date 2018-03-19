@@ -13,6 +13,7 @@ module.exports = {
 
     defaultSettings: {
       minimumConfirmations: 3,
+      minimumAddressPoolSize: 100,
       transactionNotificationAPI: 'http://localhost/transactions-notifications',
       defaultUnit: 100000000,
       coinSymbol: 'NBR',
@@ -22,6 +23,7 @@ module.exports = {
     },
 
     daemon: {
-      endpoint: 'http://nbrdaemon:19264/json_rpc'
+      //endpoint: 'http://nbrdaemon:19264/json_rpc'
+      endpoint: 'http://bcndaemon:19264/json_rpc'
     }
   };

@@ -1,9 +1,11 @@
 var AddressBO             = require('../../business/addressBO');
+var ConfigurationBO       = require('../../business/configurationBO');
 var DAOFactory            = require('../../daos/daoFactory');
 var HTTPResponseHelper    = require('../../helpers/httpResponseHelper');
 var ModelParser           = require('../../models/modelParser');
 var DaemonHelper          = require('../../helpers/daemonHelper');
 var RequestHelper         = require('../../helpers/requestHelper');
+var AAPMSWorker           = require('../../workers/aapmsWorker');
 
 module.exports = function() {
   var business = new AddressBO({
@@ -14,6 +16,16 @@ module.exports = function() {
         request: require('request')
       })
     })
+  });
+
+  var configurationBO = new ConfigurationBO({
+    configurationDAO: DAOFactory.getDAO('configuration'),
+    modelParser: new ModelParser()
+  });
+
+  var aapmsWorker = new AAPMSWorker({
+    addressBO: business,
+    configurationBO: configurationBO
   });
 
   return {
@@ -47,7 +59,13 @@ module.exports = function() {
     createAddress: function(req, res) {
       var rh = new HTTPResponseHelper(req, res);
       business.createAddress(req.params.ownerId)
-        .then(rh.ok)
+        .then(function(r) {
+          rh.created(r);
+
+          //this process will occurs in a diferent thread, just to maintain the
+          //the pool with a good amount of availabe addresses
+          aapmsWorker.run();
+        })
         .catch(rh.error);
     },
 

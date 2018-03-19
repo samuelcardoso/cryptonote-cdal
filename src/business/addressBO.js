@@ -27,6 +27,13 @@ module.exports = function(dependencies) {
       });
     },
 
+    getFreeAddresses: function() {
+      return this.getAll({
+        isEnabled: true,
+        ownerId: null
+      });
+    },
+
     createAddressFromDaemon: function(ownerId) {
       var self = this;
       var chain = Promise.resolve();
@@ -38,6 +45,7 @@ module.exports = function(dependencies) {
             return daemonHelper.createAddress();
           })
           .then(function(r) {
+            logger.info('Saving the address and linking to ownerId', ownerId);
             return self.registerAddressFromDaemon(ownerId, r.result.address);
           })
           .then(resolve)
@@ -179,7 +187,7 @@ module.exports = function(dependencies) {
 
             addressEntity = modelParser.prepare(addressEntity);
             addressEntity.balance.availabe = r.result.availableBalance;
-            addressEntity.balance.lockedAmount = r.result.lockedAmount;
+            addressEntity.balance.locked = r.result.lockedAmount;
             addressEntity.updatedAt = new Date();
 
             return addressDAO.update(addressEntity);

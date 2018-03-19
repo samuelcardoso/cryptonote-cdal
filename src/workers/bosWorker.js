@@ -30,8 +30,12 @@ module.exports = function(dependencies, autoRun) {
 
         var p = [];
         for (var i = 0; i < r.result.items.length; i++) {
-          logger.info('Parsing the transaction block ', r.result.items[i].blockHash);
-          p.push(this._parseBlockHash(r.result.items[i]));
+          if (r.result.items[i].transactions.length > 0) {
+            logger.info('Parsing the transaction block ', r.result.items[i].blockHash);
+            p.push(this._parseBlockHash(r.result.items[i]));
+          } else {
+            logger.info('There is no transactions to be parsed in this blockHash', r.result.items[i].blockHash);
+          }
         }
 
         logger.info('Returning promises', p.length);
@@ -215,6 +219,10 @@ module.exports = function(dependencies, autoRun) {
           .then(function(r) {
             if (!r) {
               flagObjectNotFound = true;
+            } else {
+              //if there is items in this array transactions had been processed
+              //so it is necessary update balance
+              flagUpdateBalance = flagUpdateBalance || r.length > 0;
             }
 
             nextBlockIndex = currentBlockIndex + defaultTransactionsBlockCount - 1;
@@ -227,7 +235,6 @@ module.exports = function(dependencies, autoRun) {
             logger.debug('nextBlockIndex ', nextBlockIndex);
 
             if (nextBlockIndex > currentBlockIndex) {
-              flagUpdateBalance = true;
               return configurationBO.update({
                 key: 'currentBlockIndex',
                 value: nextBlockIndex
