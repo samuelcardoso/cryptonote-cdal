@@ -98,6 +98,24 @@ module.exports = function() {
           });
         });
       });
+    },
+
+    updateIsConfirmedFlag: function(confirmedBlockIndex) {
+      return new Promise(function(resolve, reject) {
+        logger.log('info', 'Updating isConfirmedFlag from transactions ', confirmedBlockIndex);
+
+        model.updateMany({blockIndex: {$lte: confirmedBlockIndex}}, $.flatten({isConfirmed: true}, {multi: true}))
+        .then(function() {
+          logger.log('info', 'The transactions has been updated succesfully');
+          resolve();
+        }).catch(function(error) {
+          logger.error('An error has ocurred while updating isConfirmedFlag', error);
+          reject({
+            status: 422,
+            message: error
+          });
+        });
+      });
     }
   };
 };

@@ -70,6 +70,90 @@ module.exports = function(dependencies, autoRun) {
       });
     },
 
+    _parseUnconfirmedTransactions: function() {
+      return new Promise(function(resolve, reject) {
+        var chain = Promise.resolve();
+
+        chain
+          .then(function() {
+            logger.info('Getting unconfirmed transactions from daemon');
+            return daemonHelper.getUnconfirmedTransactionHashes();
+          })
+          .then(function(r) {
+            var p = [];
+            var transactionHashes = r.result.transactionHashes;
+
+            logger.info('Unconfirmed transaction hashes returned', JSON.stringify(transactionHashes));
+
+            for (var i = 0; i < transactionHashes.length; i++) {
+              p.push(daemonHelper.getTransaction(transactionHashes[i]));
+            }
+
+            return Promise.all(p);
+          })
+          .then(function(r) {
+            var p = [];
+            var transaction = null;
+
+            logger.info('Parsing unconfirmed transaction and storing at database', r.length);
+
+            for (var i = 0; i < r.length; i++) {
+              transaction = r[i].result.transaction;
+
+              logger.info('Parsing transaction ', JSON.stringify(transaction));
+              p.push(transactionBO.parseTransaction(transaction));
+            }
+
+            return Promise.all(p);
+          })
+          .then(resolve)
+          .catch(reject);
+      });
+    },
+
+    _confirmTransactions: function(currentBlockIndex) {
+      var minimumConfirmations = 0;
+
+      return new Promise(function(resolve, reject) {
+        var chain = Promise.resolve();
+
+        chain
+          .then(function() {
+            logger.info('Getting minimumConfirmations configuration from database', currentBlockIndex);
+            return configurationBO.getByKey('minimumConfirmations');
+          })
+          .then(function(r) {
+            minimumConfirmations = r.value;
+            return;
+          })
+          .then(function() {
+            logger.info('Getting status from daemon to verify if the currentBlockIndex is valid', currentBlockIndex);
+            return daemonHelper.getTransactions(currentBlockIndex, 1);
+          })
+          .then(function(r) {
+            if (r.error) {
+              logger.info('The currentBlockIndex is not valid yet, so its value will be decremented',
+                currentBlockIndex - 1);
+              return currentBlockIndex - 1;
+            } else {
+              logger.info('The currentBlockIndex value is valid', currentBlockIndex);
+              return currentBlockIndex;
+            }
+          })
+          .then(function() {
+            logger.info('Updating all transactions above than the specified blockIndex to confirmed',
+            JSON.stringify({
+              currentBlockIndex: currentBlockIndex,
+              minimumConfirmations: minimumConfirmations,
+              confirmedBlockIndex: currentBlockIndex - minimumConfirmations
+            }));
+            return transactionBO.updateIsConfirmedFlag(currentBlockIndex - minimumConfirmations);
+          })
+          .then(resolve)
+          .catch(reject);
+      });
+    },
+
     synchronizeToBlockChain: function() {
       var self = this;
       var chain = Promise.resolve();
@@ -96,6 +180,15 @@ module.exports = function(dependencies, autoRun) {
             return r;
           })
           .then(function() {
+            logger.info('Parsing unconfirmed transactions from daemon');
+            return self._parseUnconfirmedTransactions();
+          })
+          .then(function(r) {
+            if (r.length) {
+              logger.info('There is unconfirmed transactions hases. The wallet balance must be updated');
+              flagUpdateBalance = true;
+            }
+
             logger.info('Getting status from daemon');
             return daemonHelper.getStatus();
           })
@@ -153,6 +246,10 @@ module.exports = function(dependencies, autoRun) {
             }
           })
           .then(function() {
+            logger.info('Performing confirmating transaction process');
+            return self._confirmTransactions(currentBlockIndex);
+          })
+          .then(function() {
             if (self.autoRun) {
               if (nextBlockIndex < blockCount && !flagObjectNotFound) {
                 logger.info('There is more block hases...');
@@ -165,7 +262,7 @@ module.exports = function(dependencies, autoRun) {
               }
             }
 
-            logger.info('Blockchain Observer Service finished this execution');
+            logger.info('Blockchain Observer Service has finished this execution');
 
             return true;
           })

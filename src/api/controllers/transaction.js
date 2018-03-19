@@ -66,6 +66,10 @@ module.exports = function() {
     save: function(req, res) {
       var rh = new HTTPResponseHelper(req, res);
       req.body.ownerId = req.params.ownerId;
+
+      if (req.params.address) {
+        req.body.addresses = [req.params.address];
+      }
       business.save(req.body)
         .then(rh.ok)
         .catch(rh.error);

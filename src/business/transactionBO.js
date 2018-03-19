@@ -6,7 +6,7 @@ module.exports = function(dependencies) {
   var modelParser = dependencies.modelParser;
   var daemonHelper = dependencies.daemonHelper;
   var addressBO = dependencies.addressBO;
-  var addressBO = null;
+  var addressDAO = null;
 
   if (addressBO) {
     addressDAO = addressBO.dependencies.addressDAO;
@@ -230,6 +230,10 @@ module.exports = function(dependencies) {
           .then(resolve)
           .catch(reject);
       });
+    },
+
+    updateIsConfirmedFlag: function(confirmedBlockIndex) {
+      return transactionDAO.updateIsConfirmedFlag(confirmedBlockIndex);
     }
   };
 };

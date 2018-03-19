@@ -22,6 +22,6 @@ module.exports = {
     },
 
     daemon: {
-      endpoint: 'http://52.224.12.189:19264/json_rpc'
+      endpoint: 'http://nbrdaemon:19264/json_rpc'
     }
   };

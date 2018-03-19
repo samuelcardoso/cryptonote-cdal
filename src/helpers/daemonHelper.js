@@ -23,6 +23,10 @@ module.exports = function(dependencies) {
       return this._main('getAddresses');
     },
 
+    getUnconfirmedTransactionHashes: function(addresses) {
+      return this._main('getUnconfirmedTransactionHashes', {addresses: addresses || []});
+    },
+
     getSpendKeys: function(address) {
       return this._main('getSpendKeys', {address: address});
     },

@@ -32,19 +32,19 @@ describe('api', function(){
         .post('/v1/ownerId/transactions')
         .send({
           anonymity: 6,
-          fee: 1000000,
+          fee: 1000,
           paymentId:'',
           addresses:[
-            '28eYWfSzMfY1GvxxyrBt3u2bqaLs8tnbCWrWchJWvdpRGqaGDdcqi1aNiPhkhHqyPCT88B1uWdWJAWHnoTpAyjWN9VNeipG'
+            'N8JvJBfQCVY67X7GAq4sr15XAvKG6chyZjks2e1HD5S3VWrzqarixLvKuRtspmiqCjauGzK6wD2Fzc31CbHLqisBUMYzmqV'
           ],
           transfers:[
             {
-              amount:1000000,
-              address:'29ivF7BL7VtE5v2dX1sp4he7S5dcUtzcU1ACB6ZLXdjoCXXbHDseUGufNCezqRpKfLJf5dmANoy6uA2bGtZ3uT5fJKzZjPr'
+              amount:10000,
+              address:'NCkUc6frUEFL5B2eaoq5HUMCy1iCwgdwoYTJSPqUZ3eYKd2yJfiEnRYUdhThUyKVWgaFMBYSbALaidotRTPqwvyR6S5XwZx'
             }
           ],
           changeAddress:
-            '28eYWfSzMfY1GvxxyrBt3u2bqaLs8tnbCWrWchJWvdpRGqaGDdcqi1aNiPhkhHqyPCT88B1uWdWJAWHnoTpAyjWN9VNeipG'
+            'N8JvJBfQCVY67X7GAq4sr15XAvKG6chyZjks2e1HD5S3VWrzqarixLvKuRtspmiqCjauGzK6wD2Fzc31CbHLqisBUMYzmqV'
         })
         .set('Accept', 'application/json')
         .expect('Content-Type', /json/)
@@ -54,20 +54,20 @@ describe('api', function(){
           expect(res.body.timestamp).to.not.be.null;
           expect(res.body.transactionHash).to.not.be.null;
           expect(res.body.anonymity).to.be.equal(6);
-          expect(res.body.fee).to.be.equal(1000000);
+          expect(res.body.fee).to.be.equal(1000);
           expect(res.body.paymentId).to.be.equal('');
           expect(res.body.isConfirmed).to.be.equal(false);
           expect(res.body.isNotified).to.be.equal(false);
-          expect(res.body.amount).to.be.equal(-2000000);
+          expect(res.body.amount).to.be.equal(-11000);
           expect(res.body.addresses[0])
             .to
             .be
-            .equal('28eYWfSzMfY1GvxxyrBt3u2bqaLs8tnbCWrWchJWvdpRGqaGDdcqi1aNiPhkhHqyPCT88B1uWdWJAWHnoTpAyjWN9VNeipG');
+            .equal('N8JvJBfQCVY67X7GAq4sr15XAvKG6chyZjks2e1HD5S3VWrzqarixLvKuRtspmiqCjauGzK6wD2Fzc31CbHLqisBUMYzmqV');
           expect(res.body.changeAddress)
             .to
             .be
-            .equal('28eYWfSzMfY1GvxxyrBt3u2bqaLs8tnbCWrWchJWvdpRGqaGDdcqi1aNiPhkhHqyPCT88B1uWdWJAWHnoTpAyjWN9VNeipG');
-          expect(res.body.transfers[0].amount).to.be.equal(1000000);
+            .equal('N8JvJBfQCVY67X7GAq4sr15XAvKG6chyZjks2e1HD5S3VWrzqarixLvKuRtspmiqCjauGzK6wD2Fzc31CbHLqisBUMYzmqV');
+          expect(res.body.transfers[0].amount).to.be.equal(1000);
         });
     });
   });
