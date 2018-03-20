@@ -9,6 +9,7 @@ module.exports = function(dependencies) {
     dependencies: dependencies,
 
     run: function() {
+      logger.info('[AAPMSWorker] Starting the process to maintain the pool');
       return this.maintainPool();
     },
 
@@ -19,14 +20,15 @@ module.exports = function(dependencies) {
 
         chain
           .then(function() {
+            logger.info('[AAPMSWorker] Getting the minimum size for the pool');
             return configurationBO.getByKey('minimumAddressPoolSize');
           })
           .then(function(r) {
-            logger.info('The minimum size for the pool is ', minimumAddressPoolSize);
+            logger.info('[AAPMSWorker] The minimum size for the pool is ', r.value);
             minimumAddressPoolSize = r.value;
           })
           .then(function() {
-            logger.info('Listing free addresses from database');
+            logger.info('[AAPMSWorker] Listing free addresses from database');
             return addressBO.getFreeAddresses();
           })
           .then(function(r) {
@@ -34,18 +36,25 @@ module.exports = function(dependencies) {
             var p = [];
 
             if (diff > 0) {
-              logger.info('Total of addresses to create to keep the pool consistent', diff);
+              logger.info('[AAPMSWorker] Total of addresses to be created to keep the pool consistent', diff);
               for (var i = 0; i < diff; i++) {
                 p.push(addressBO.createAddressFromDaemon());
               }
             } else {
-              logger.info('The pool is ok no address is needed to be created');
+              logger.info('[AAPMSWorker] The pool is ok no address is needed to be created');
             }
 
             return Promise.all(p);
           })
+          .then(function(r) {
+            logger.info('[AAPMSWorker] All the addresses was created successfully');
+            logger.debug(JSON.stringify(r));
+          })
           .then(resolve)
-          .catch(reject);
+          .catch(function(r){
+            logger.error('[AAPMSWorker] An error has occurred while maintaining the pool');
+            reject(r);
+          });
       });
     }
   };
