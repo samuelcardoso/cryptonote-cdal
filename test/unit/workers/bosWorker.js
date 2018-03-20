@@ -1,8 +1,8 @@
-var DaemonHelper      = require('../../src/helpers/daemonHelper');
-var TransactionBO     = require('../../src/business/transactionBO');
-var AddressBO         = require('../../src/business/addressBO');
-var ConfigurationBO   = require('../../src/business/configurationBO');
-var BOSWorker         = require('../../src/workers/bosWorker');
+var DaemonHelper      = require('../../../src/helpers/daemonHelper');
+var TransactionBO     = require('../../../src/business/transactionBO');
+var AddressBO         = require('../../../src/business/addressBO');
+var ConfigurationBO   = require('../../../src/business/configurationBO');
+var BOSWorker         = require('../../../src/workers/bosWorker');
 var chai              = require('chai');
 var sinon             = require('sinon');
 var expect            = chai.expect;
@@ -34,12 +34,56 @@ describe('Workers > BOSWorker', function() {
       value: 10000
     }));
 
-    var updateWalletBalanceStub = sinon.stub(addressBO, 'updateWalletBalance');
-    updateWalletBalanceStub
-      .withArgs()
-      .returns(Promise.resolve());
+  getByKeyStub
+    .withArgs('minimumConfirmations')
+    .returns(Promise.resolve({
+      key: 'minimumConfirmations',
+      value: 3
+    }));
+
+  var updateWalletBalanceStub = sinon.stub(addressBO, 'updateWalletBalance');
+  updateWalletBalanceStub
+    .withArgs()
+    .returns(Promise.resolve());
 
   it('should run', function() {
+    var getUnconfirmedTransactionHashesStub = sinon.stub(daemonHelper, 'getUnconfirmedTransactionHashes');
+    getUnconfirmedTransactionHashesStub
+      .withArgs()
+      .returns(Promise.resolve({
+        result: {
+          transactionHashes: ['HASH1']
+        }
+      }));
+
+    var getTransactionStub = sinon.stub(daemonHelper, 'getTransaction');
+    getTransactionStub
+      .withArgs('HASH1')
+      .returns(Promise.resolve({
+        result: {
+          transaction: {
+            transactionHash: 'transactionHash'
+          }
+        }
+      }));
+
+    var parseTransactionStub = sinon.stub(transactionBO, 'parseTransaction');
+    parseTransactionStub
+      .withArgs({
+        result: {
+          transaction: {
+            transactionHash: 'transactionHash'
+          }
+        }
+      })
+      .returns(Promise.resolve({
+        result: {
+          transaction: {
+            transactionHash: 'transactionHash'
+          }
+        }
+      }));
+
     var getStatusStub = sinon.stub(daemonHelper, 'getStatus');
     getStatusStub
       .withArgs()
@@ -122,7 +166,19 @@ describe('Workers > BOSWorker', function() {
         }
       }));
 
-    var parseTransactionStub = sinon.stub(transactionBO, 'parseTransaction');
+    getTransactionsStub
+      .withArgs(0, 1)
+      .returns(Promise.resolve({
+        id: 'test',
+        jsonrpc: '2.0',
+        result: {
+          items: [{
+            blockHash: 'blockHash',
+            transactions: []
+          }]
+        }
+      }));
+
     parseTransactionStub
       .withArgs(t1)
       .returns(Promise.resolve(t1));
@@ -141,20 +197,67 @@ describe('Workers > BOSWorker', function() {
         value: 9999
       }));
 
+    var updateIsConfirmedFlagStub = sinon.stub(transactionBO, 'updateIsConfirmedFlag');
+    updateIsConfirmedFlagStub
+    .withArgs(-3)
+    .returns(Promise.resolve());
+
     return bosWorker.run()
       .then(function(r) {
+        expect(getUnconfirmedTransactionHashesStub.callCount).to.be.equal(1);
+        expect(getTransactionStub.callCount).to.be.equal(1);
         expect(getStatusStub.callCount).to.be.equal(1);
-        expect(getTransactionsStub.callCount).to.be.equal(1);
-        expect(parseTransactionStub.callCount).to.be.equal(2);
+        expect(parseTransactionStub.callCount).to.be.equal(3);
         expect(updateStub.callCount).to.be.equal(1);
         expect(r).to.be.true;
 
+        getUnconfirmedTransactionHashesStub.restore();
+        getTransactionStub.restore();
         getTransactionsStub.restore();
         getStatusStub.restore();
+        parseTransactionStub.restore();
+        updateStub.restore();
       });
   });
 
   it('should not crach when the daemon (getStatus) returns an error', function() {
+    var getUnconfirmedTransactionHashesStub = sinon.stub(daemonHelper, 'getUnconfirmedTransactionHashes');
+    getUnconfirmedTransactionHashesStub
+      .withArgs()
+      .returns(Promise.resolve({
+        result: {
+          transactionHashes: ['HASH1']
+        }
+      }));
+
+    var getTransactionStub = sinon.stub(daemonHelper, 'getTransaction');
+    getTransactionStub
+      .withArgs('HASH1')
+      .returns(Promise.resolve({
+        result: {
+          transaction: {
+            transactionHash: 'transactionHash'
+          }
+        }
+      }));
+
+    var parseTransactionStub = sinon.stub(transactionBO, 'parseTransaction');
+    parseTransactionStub
+      .withArgs({
+        result: {
+          transaction: {
+            transactionHash: 'transactionHash'
+          }
+        }
+      })
+      .returns(Promise.resolve({
+        result: {
+          transaction: {
+            transactionHash: 'transactionHash'
+          }
+        }
+      }));
+
     var getStatusStub = sinon.stub(daemonHelper, 'getStatus');
     getStatusStub
       .withArgs()
@@ -169,14 +272,57 @@ describe('Workers > BOSWorker', function() {
 
     return bosWorker.run()
       .then(function(r) {
+        expect(getUnconfirmedTransactionHashesStub.callCount).to.be.equal(1);
+        expect(getTransactionStub.callCount).to.be.equal(1);
         expect(getStatusStub.callCount).to.be.equal(1);
+        expect(parseTransactionStub.callCount).to.be.equal(1);
         expect(r).to.be.true;
 
+        getUnconfirmedTransactionHashesStub.restore();
+        getTransactionStub.restore();
         getStatusStub.restore();
+        parseTransactionStub.restore();
       });
   });
 
   it('should not crach when the daemon (getTransactions) returns an error', function() {
+    var getUnconfirmedTransactionHashesStub = sinon.stub(daemonHelper, 'getUnconfirmedTransactionHashes');
+    getUnconfirmedTransactionHashesStub
+      .withArgs()
+      .returns(Promise.resolve({
+        result: {
+          transactionHashes: ['HASH1']
+        }
+      }));
+
+    var getTransactionStub = sinon.stub(daemonHelper, 'getTransaction');
+    getTransactionStub
+      .withArgs('HASH1')
+      .returns(Promise.resolve({
+        result: {
+          transaction: {
+            transactionHash: 'transactionHash'
+          }
+        }
+      }));
+
+    var parseTransactionStub = sinon.stub(transactionBO, 'parseTransaction');
+    parseTransactionStub
+      .withArgs({
+        result: {
+          transaction: {
+            transactionHash: 'transactionHash'
+          }
+        }
+      })
+      .returns(Promise.resolve({
+        result: {
+          transaction: {
+            transactionHash: 'transactionHash'
+          }
+        }
+      }));
+
     var getStatusStub = sinon.stub(daemonHelper, 'getStatus');
     getStatusStub
       .withArgs()
@@ -205,12 +351,32 @@ describe('Workers > BOSWorker', function() {
 
     return bosWorker.run()
       .then(function(r) {
+        expect(getUnconfirmedTransactionHashesStub.callCount).to.be.equal(1);
         expect(getStatusStub.callCount).to.be.equal(1);
         expect(getTransactionsStub.callCount).to.be.equal(1);
         expect(r).to.be.true;
 
+        getUnconfirmedTransactionHashesStub.restore();
         getTransactionsStub.restore();
         getStatusStub.restore();
+      });
+  });
+
+  it('should not crach when the daemon (getUnconfirmedTransactionHashes) returns an error', function() {
+    var getUnconfirmedTransactionHashesStub = sinon.stub(daemonHelper, 'getUnconfirmedTransactionHashes');
+    getUnconfirmedTransactionHashesStub
+      .withArgs()
+      .returns(Promise.resolve({
+        error: {
+        }
+      }));
+
+    return bosWorker.run()
+      .then(function(r) {
+        expect(getUnconfirmedTransactionHashesStub.callCount).to.be.equal(1);
+        expect(r).to.be.true;
+
+        getUnconfirmedTransactionHashesStub.restore();
       });
   });
 });
