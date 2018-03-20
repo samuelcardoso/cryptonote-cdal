@@ -1,5 +1,5 @@
-var DaemonHelper      = require('../../src/helpers/daemonHelper');
-var RequestHelper     = require('../../src/helpers/requestHelper');
+var DaemonHelper      = require('../../../src/helpers/daemonHelper');
+var RequestHelper     = require('../../../src/helpers/requestHelper');
 var chai              = require('chai');
 var sinon             = require('sinon');
 var expect            = chai.expect;
