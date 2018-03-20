@@ -21,6 +21,10 @@ module.exports = function(){
       type: Number,
       required: true
     },
+    extra: {
+      type: String,
+      required: false
+    },
     isConfirmed: {
       type: Boolean,
       required: true

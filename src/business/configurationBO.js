@@ -5,6 +5,7 @@ var settings          = require('../config/settings');
 module.exports = function(dependencies) {
   var configurationDAO = dependencies.configurationDAO;
   var modelParser = dependencies.modelParser;
+  var dateHelper = dependencies.dateHelper;
 
   return {
     dependencies: dependencies,
@@ -15,14 +16,21 @@ module.exports = function(dependencies) {
 
     getAll: function(filter) {
       return new Promise(function(resolve, reject) {
+        if (!filter) {
+          filter = {};
+        }
+
         filter.isEnabled = true;
-        logger.info('Listing all configurations by filter ', filter);
+
+        logger.info('[ConfigurationBO] Listing all configurations by filter ', filter);
         configurationDAO.getAll(filter)
           .then(function(r) {
-            resolve(r.map(function(item) {
+            logger.info('[ConfigurationBO] Total of configurations', r.length);
+            return r.map(function(item) {
               return modelParser.clear(item);
-            }));
+            });
           })
+          .then(resolve)
           .catch(reject);
       });
     },
@@ -34,10 +42,10 @@ module.exports = function(dependencies) {
         self.getByKey(entity.key)
           .then(function(configuration) {
             if (!configuration.id) {
-              logger.debug('Saving the configuration. Entity: ', JSON.stringify(entity));
+              logger.debug('[ConfigurationBO] Saving the configuration. Entity: ', JSON.stringify(entity));
               var o = modelParser.prepare(entity, true);
-              o.createdAt = new Date();
-              logger.debug('Entity  after prepare: ', JSON.stringify(o));
+              o.createdAt = dateHelper.getNow();
+              logger.debug('[ConfigurationBO] Entity  after prepare: ', JSON.stringify(o));
               return configurationDAO.save(o);
             } else {
               throw {
@@ -47,8 +55,10 @@ module.exports = function(dependencies) {
             }
           })
           .then(function(r) {
-            resolve(modelParser.clear(r));
+            logger.info('ConfigurationBO] Configuration saved successfully', JSON.stringify(r));
+            return modelParser.clear(r);
           })
+          .then(resolve)
           .catch(reject);
       });
     },
@@ -80,11 +90,15 @@ module.exports = function(dependencies) {
           .then(function(configuration) {
             if (configuration && configuration.id) {
               configuration = modelParser.prepare(configuration);
-              configuration.updatedAt = new Date();
+              configuration.updatedAt = dateHelper.getNow();
               configuration.value = entity.value;
-              logger.info('Updating configuration', JSON.stringify(configuration));
+              logger.info('[ConfigurationBO] Updating configuration', JSON.stringify(configuration));
               return configurationDAO.update(configuration);
             } else {
+              logger.info('[ConfigurationBO] An error will be thrown because there is no configuration to key',
+                entity.key,
+                JSON.stringify(configuration));
+
               throw {
                 status: 404,
                 message: 'The configuration ' + entity.key + ' was not found'
@@ -92,6 +106,8 @@ module.exports = function(dependencies) {
             }
           })
           .then(function(r) {
+            logger.info('[ConfigurationBO] Configuration was updated successfully',
+              JSON.stringify(r));
             return modelParser.clear(r);
           })
           .then(resolve)
@@ -107,16 +123,21 @@ module.exports = function(dependencies) {
           key: key
         };
 
+        logger.info('[ConfigurationBO] Getting a configuration by key', key);
+
         self.getAll(filter)
           .then(function(configurations) {
             if (configurations.length) {
-              logger.info('Configuration found by key', JSON.stringify(configurations[0]));
+              logger.info('[ConfigurationBO] Configuration found by key', JSON.stringify(configurations[0]));
               return configurations[0];
             } else {
-              return {
+              logger.warn('[ConfigurationBO] There is no configuration to provided key', key);
+              var r = {
                 key: key,
                 value: settings.defaultSettings[key]
               };
+              logger.debug('[ConfigurationBO] Returning default settings from configuration file', JSON.stringify(r));
+              return r;
             }
           })
           .then(resolve)
@@ -128,16 +149,24 @@ module.exports = function(dependencies) {
       var self = this;
 
       return new Promise(function(resolve, reject) {
+        logger.info('[ConfigurationBO] Disabling a configuration', key);
+
         self.getByKey(key)
           .then(function(configuration) {
-            if (!configuration) {
+            if (!configuration.id) {
+              logger.warn('[ConfigurationBO] A error will be thrown. There is no configuration to the provided key',
+                key);
               throw {
                 status: 404,
-                message: 'Configuration not found'
+                message: 'The configuration ' + key + ' was not found'
               };
             } else {
               return configurationDAO.disable(configuration.id);
             }
+          })
+          .then(function() {
+            logger.warn('[ConfigurationBO] Configuration disabled successfully', key);
+            return;
           })
           .then(resolve)
           .catch(reject);

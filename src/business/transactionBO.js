@@ -171,6 +171,7 @@ module.exports = function(dependencies) {
           timestamp: blockchainTransaction.timestamp,
           timestamp: blockchainTransaction.timestamp,
           transactionHash: blockchainTransaction.transactionHash,
+          extra: blockchainTransaction.extra,
           createdAt: new Date(),
           isConfirmed: false,
           isNotified: false,
