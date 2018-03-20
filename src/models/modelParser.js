@@ -11,12 +11,6 @@ module.exports = function() {
       return o;
     },
 
-    clearUser: function(user) {
-      var o = Object.assign({}, this.clear(user));
-
-      return o;
-    },
-
     prepare: function(entity, isNew) {
       var o = Object.assign({}, entity);
 

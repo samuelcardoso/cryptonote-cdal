@@ -57,6 +57,24 @@ describe('business > DaemonHelper', function() {
       });
   });
 
+  it('should run the getUnconfirmedTransactionHashes method', function() {
+    var message = Object.assign({}, commonRPCMessage);
+    message.method = 'getUnconfirmedTransactionHashes';
+    message.addresses = [];
+
+    console.log(JSON.stringify(message));
+    postJSONStub
+      .withArgs('http://localhost:8000/json_rpc', [], message, [])
+      .returns(Promise.resolve({
+        var: 1
+      }));
+
+    return daemonHelper.getAddresses()
+      .then(function(r) {
+        expect(r.var).to.be.equal(1);
+      });
+  });
+
   it('should run the getSpendKeys method', function() {
     var message = Object.assign({}, commonRPCMessage);
     message.method = 'getSpendKeys';
