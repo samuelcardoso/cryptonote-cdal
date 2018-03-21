@@ -4,6 +4,7 @@ var DAOFactory            = require('../../daos/daoFactory');
 var HTTPResponseHelper    = require('../../helpers/httpResponseHelper');
 var ModelParser           = require('../../models/modelParser');
 var DaemonHelper          = require('../../helpers/daemonHelper');
+var DateHelper            = require('../../helpers/dateHelper');
 var RequestHelper         = require('../../helpers/requestHelper');
 var AAPMSWorker           = require('../../workers/aapmsWorker');
 
@@ -11,6 +12,7 @@ module.exports = function() {
   var business = new AddressBO({
     addressDAO: DAOFactory.getDAO('address'),
     modelParser: new ModelParser(),
+    dateHelper: new DateHelper(),
     daemonHelper: new DaemonHelper({
       requestHelper: new RequestHelper({
         request: require('request')
@@ -80,7 +82,7 @@ module.exports = function() {
     delete: function(req, res) {
       var rh = new HTTPResponseHelper(req, res);
 
-      business.delete(req.params.address, req.params.ownerId)
+      business.delete(req.params.ownerId, req.params.address)
         .then(rh.ok)
         .catch(rh.error);
     },

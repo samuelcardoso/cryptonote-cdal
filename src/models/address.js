@@ -24,7 +24,7 @@ module.exports = function(){
       }
     },
     balance: {
-      availabe: {
+      available: {
         type: Number,
         required: true,
       },

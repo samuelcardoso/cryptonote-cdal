@@ -5,29 +5,52 @@ module.exports = function(dependencies) {
   var addressDAO = dependencies.addressDAO;
   var modelParser = dependencies.modelParser;
   var daemonHelper = dependencies.daemonHelper;
+  var dateHelper = dependencies.dateHelper;
 
   return {
     dependencies: dependencies,
 
     clear: function() {
-      return addressDAO.clear();
+
+      return new Promise(function(resolve, reject) {
+        var chain = Promise.resolve();
+
+        chain
+          .then(function() {
+            logger.info('[AddressBO] Clearing the database');
+            return addressDAO.clear();
+          })
+          .then(function() {
+            logger.info('[AddressBO] The database has been cleared');
+          })
+          .then(resolve)
+          .catch(reject);
+      });
     },
 
     getAll: function(filter) {
       return new Promise(function(resolve, reject) {
+        if (!filter) {
+          filter = {};
+        }
+
         filter.isEnabled = true;
-        logger.info('Listing all addresses by filter ', JSON.stringify(filter));
+
+        logger.info('[AddressBO] Listing all addresses by filter ', JSON.stringify(filter));
         addressDAO.getAll(filter)
           .then(function(r) {
-            resolve(r.map(function(item) {
+            logger.info('[AddressBO] Total of addresses', r.length);
+            return r.map(function(item) {
               return modelParser.clear(item);
-            }));
+            });
           })
+          .then(resolve)
           .catch(reject);
       });
     },
 
     getFreeAddresses: function() {
+      logger.info('[AddressBO] Getting free addresses from database');
       return this.getAll({
         isEnabled: true,
         ownerId: null
@@ -41,11 +64,11 @@ module.exports = function(dependencies) {
       return new Promise(function(resolve, reject) {
         chain
           .then(function() {
-            logger.info('Requesting to the daemon a new address');
+            logger.info('[AddressBO] Requesting to the daemon a new address');
             return daemonHelper.createAddress();
           })
           .then(function(r) {
-            logger.info('Saving the address and linking to ownerId', ownerId);
+            logger.info('[AddressBO] Saving the address and linking to ownerId', ownerId);
             return self.registerAddressFromDaemon(ownerId, r.result.address);
           })
           .then(resolve)
@@ -65,26 +88,27 @@ module.exports = function(dependencies) {
               address: address
             };
 
-            logger.info('Getting keys from the address ', address);
+            logger.info('[AddressBO] Getting keys from the address ', address);
             return daemonHelper.getSpendKeys(address);
           })
           .then(function(r) {
-            logger.info('Returned keys from address ', address, JSON.stringify(r));
+            logger.info('[AddressBO] Returned keys from address ', address, JSON.stringify(r));
             addressEntity.keys = {
               spendPublicKey: r.result.spendPublicKey,
               spendSecretKey: r.result.spendSecretKey
             };
 
-            addressEntity.createdAt = new Date();
+            addressEntity.createdAt = dateHelper.getNow();
             addressEntity.isEnabled = true;
             addressEntity.balance = {
-              availabe: 0,
+              available: 0,
               locked: 0
             };
-
+            logger.info('[AddressBO] Saving the address to the database', JSON.stringify(addressEntity));
             return addressDAO.save(addressEntity);
           })
           .then(function(r) {
+            logger.info('[AddressBO] The address was stored at database successfully', JSON.stringify(r));
             return modelParser.clear(r);
           })
           .then(resolve)
@@ -100,27 +124,30 @@ module.exports = function(dependencies) {
       return new Promise(function(resolve, reject) {
         return chain
           .then(function() {
-            logger.info('Trying to get a free address from database');
+            logger.info('[AddressBO] Trying to get a free address from database');
             return addressDAO.getFreeAddress();
           })
           .then(function(r) {
             if (!r) {
-              logger.info('There is no free address at database a brande new address will be request to the daemon');
-              return self.createAddressFromDaemon();
+              logger.info('[AddressBO] There is no free address at database');
+              return self.createAddressFromDaemon(ownerId);
             } else {
-              logger.info('A free address was found at database', JSON.stringify(r));
+              logger.info('[AddressBO] A free address was found at database', JSON.stringify(r));
               return r;
             }
           })
           .then(function(r) {
-            freeAddress = r;
+            freeAddress = modelParser.prepare(r);
+            freeAddress.isEnabled = true;
             freeAddress.ownerId = ownerId;
+            freeAddress.updatedAt = dateHelper.getNow();
 
-            logger.info('Updating the free addess to be owned by the ownerId ', ownerId);
+            logger.info('[AddressBO] Updating the free address to be owned by the ownerId ',
+              JSON.stringify(freeAddress));
             return addressDAO.update(freeAddress);
           })
           .then(function(r) {
-            logger.info('The address now is associated to the ownerId ', ownerId);
+            logger.info('[AddressBO] The address now is associated to the ownerId ', JSON.stringify(r));
             return modelParser.clear(r);
           })
           .then(resolve)
@@ -136,14 +163,14 @@ module.exports = function(dependencies) {
 
         chain
           .then(function() {
-            logger.info('Getting addresses from daemon');
+            logger.info('[AddressBO] Getting addresses from daemon');
             return daemonHelper.getAddresses();
           })
           .then(function(r) {
             var addresses = r.result.addresses;
             var p = [];
 
-            logger.info('Addresses returned from daemon', JSON.stringify(addresses.length));
+            logger.info('[AddressBO] Addresses returned from daemon', JSON.stringify(addresses));
 
             for (var i = 0; i < addresses.length; i++) {
               p.push(self.updateBalance(addresses[i]));
@@ -162,7 +189,7 @@ module.exports = function(dependencies) {
 
       return new Promise(function(resolve, reject) {
         var chain = Promise.resolve();
-        logger.info('Trying to get address from database', address);
+        logger.info('[AddressBO] Trying to get address from database', address);
 
         chain
           .then(function() {
@@ -170,30 +197,31 @@ module.exports = function(dependencies) {
           })
           .then(function(r) {
             if (r) {
-              logger.info('The address was found at database', address);
+              logger.info('[AddressBO] The address was found at database', address);
               return r;
             } else {
-              logger.info('The address was not found at database. It will be created from daemon', address);
+              logger.info('[AddressBO] The address was not found at database. It will be created from daemon', address);
               return self.registerAddressFromDaemon(null, address);
             }
           })
           .then(function(r) {
             addressEntity = r;
-            logger.info('Getting the balance', address.address);
+            logger.info('[AddressBO] Getting the balance for', address);
             return daemonHelper.getBalance(r.address);
           })
           .then(function(r) {
-            logger.info('Actual balance to the address', addressEntity.address, JSON.stringify(r));
+            logger.info('[AddressBO] Actual balance to the address', addressEntity.address, JSON.stringify(r));
 
             addressEntity = modelParser.prepare(addressEntity);
-            addressEntity.balance.availabe = r.result.availableBalance;
+            addressEntity.balance.available = r.result.availableBalance;
             addressEntity.balance.locked = r.result.lockedAmount;
-            addressEntity.updatedAt = new Date();
-
+            addressEntity.isEnabled = true;
+            addressEntity.updatedAt = dateHelper.getNow();
+            console.log(addressEntity);
             return addressDAO.update(addressEntity);
           })
           .then(function(r) {
-            logger.info('The balance was updated successfully', JSON.stringify(r));
+            logger.info('[AddressBO] The balance was updated successfully', JSON.stringify(r));
             return modelParser.clear(r);
           })
           .then(resolve)
@@ -213,12 +241,15 @@ module.exports = function(dependencies) {
           filter.ownerId = ownerId;
         }
 
+        logger.info('[AddressBO] Getting an address by ownerId/address', ownerId, address);
+
         self.getAll(filter)
           .then(function(addresses) {
             if (addresses.length) {
-              logger.info('Addresses found by address', JSON.stringify(addresses[0]));
+              logger.info('[AddressBO] Address found by ownerId/address', JSON.stringify(addresses[0]));
               return addresses[0];
             } else {
+              logger.warn('[AddressBO] There is no address to provided informations', ownerId, address);
               return null;
             }
           })
@@ -227,24 +258,33 @@ module.exports = function(dependencies) {
       });
     },
 
-    delete: function(address, ownerId) {
+    delete: function(ownerId, address) {
       var self = this;
 
       return new Promise(function(resolve, reject) {
+        logger.info('[AddressBO] Disabling an address', ownerId, address);
+
         self.getByAddress(ownerId, address)
           .then(function(addresses) {
             if (!addresses) {
+              logger.warn('[AddressBO] A error will be thrown. There is no address to the provided informations',
+                ownerId, address);
               throw {
                 status: 404,
-                message: 'Address not found'
+                message: 'The address ' + address + ' not found'
               };
             } else {
-              address.updatedAt = new Date();
               return addressDAO.disable(addresses.id);
             }
           })
           .then(function(address) {
+            logger.info('[AddressBO] Address disabled successfully', JSON.stringify(address));
+            logger.info('[AddressBO] Trying to delete the address from the daemon');
             return daemonHelper.deleteAddress(address.address);
+          })
+          .then(function() {
+            logger.info('[AddressBO] The address was deleted from daemon successfully', address);
+            return true;
           })
           .then(resolve)
           .catch(reject);

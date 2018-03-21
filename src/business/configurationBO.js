@@ -11,7 +11,21 @@ module.exports = function(dependencies) {
     dependencies: dependencies,
 
     clear: function() {
-      return configurationDAO.clear();
+
+      return new Promise(function(resolve, reject) {
+        var chain = Promise.resolve();
+
+        chain
+          .then(function() {
+            logger.info('[ConfigurationBO] Clearing the database');
+            return configurationDAO.clear();
+          })
+          .then(function() {
+            logger.info('[ConfigurationBO] The database has been cleared');
+          })
+          .then(resolve)
+          .catch(reject);
+      });
     },
 
     getAll: function(filter) {
@@ -165,7 +179,7 @@ module.exports = function(dependencies) {
             }
           })
           .then(function() {
-            logger.warn('[ConfigurationBO] Configuration disabled successfully', key);
+            logger.info('[ConfigurationBO] Configuration disabled successfully', key);
             return;
           })
           .then(resolve)

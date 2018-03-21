@@ -2,11 +2,13 @@ var ConfigurationBO       = require('../../business/configurationBO');
 var DAOFactory            = require('../../daos/daoFactory');
 var HTTPResponseHelper    = require('../../helpers/httpResponseHelper');
 var ModelParser           = require('../../models/modelParser');
+var DateHelper            = require('../../models/dateHelper');
 
 module.exports = function() {
   var business = new ConfigurationBO({
     configurationDAO: DAOFactory.getDAO('configuration'),
-    modelParser: new ModelParser()
+    modelParser: new ModelParser(),
+    dateHelper: new DateHelper()
   });
 
   return {
