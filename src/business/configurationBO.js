@@ -11,7 +11,6 @@ module.exports = function(dependencies) {
     dependencies: dependencies,
 
     clear: function() {
-
       return new Promise(function(resolve, reject) {
         var chain = Promise.resolve();
 

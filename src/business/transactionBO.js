@@ -6,28 +6,46 @@ module.exports = function(dependencies) {
   var modelParser = dependencies.modelParser;
   var daemonHelper = dependencies.daemonHelper;
   var addressBO = dependencies.addressBO;
-  var addressDAO = null;
-
-  if (addressBO) {
-    addressDAO = addressBO.dependencies.addressDAO;
-  }
+  var addressDAO = dependencies.addressDAO;
+  var dateHelper = dependencies.dateHelper;
 
   return {
     dependencies: dependencies,
 
     clear: function() {
-      return transactionDAO.clear();
+      return new Promise(function(resolve, reject) {
+        var chain = Promise.resolve();
+
+        chain
+          .then(function() {
+            logger.info('[TransactionBO] Clearing the database');
+            return transactionDAO.clear();
+          })
+          .then(function() {
+            logger.info('[TransactionBO] The database has been cleared');
+          })
+          .then(resolve)
+          .catch(reject);
+      });
     },
 
     getAll: function(filter) {
       return new Promise(function(resolve, reject) {
-        logger.info('Listing all transactions by filter ', JSON.stringify(filter));
+        if (!filter) {
+          filter = {};
+        }
+
+        filter.isEnabled = true;
+
+        logger.info('[TransactionBO] Listing all transactions by filter ', JSON.stringify(filter));
         transactionDAO.getAll(filter)
           .then(function(r) {
-            resolve(r.map(function(item) {
+            logger.info('[TransactionBO] Total of transactions', r.length);
+            return r.map(function(item) {
               return modelParser.clear(item);
-            }));
+            });
           })
+          .then(resolve)
           .catch(reject);
       });
     },
@@ -39,7 +57,7 @@ module.exports = function(dependencies) {
       return new Promise(function(resolve, reject) {
         return chain
           .then(function() {
-            logger.info('Sending the transaction to the blockchain', JSON.stringify(entity));
+            logger.info('[TransactionBO] Sending the transaction to the blockchain', JSON.stringify(entity));
             return daemonHelper.sendTransaction(
                 entity.anonymity,
                 entity.fee,
@@ -52,19 +70,18 @@ module.exports = function(dependencies) {
           })
           .then(function(r) {
             entity.transactionHash = r.result.transactionHash;
-            entity.createdAt = new Date();
+            entity.createdAt = dateHelper.getNow();
             entity.isConfirmed = false;
             entity.isNotified = false;
-            entity.confirmations = 0;
 
-            logger.info('Getting transaction information by transactionHash', r.result.transactionHash);
+            logger.info('[TransactionBO] Getting transaction information by transactionHash', r.result.transactionHash);
             return daemonHelper.getTransaction(entity.transactionHash);
           })
           .then(function(r) {
             entity.blockIndex = r.result.transaction.blockIndex;
             entity.timestamp = r.result.transaction.timestamp;
             entity.amount = r.result.transaction.amount;
-            logger.info('Storing the transaction at database', JSON.stringify(entity));
+            logger.info('[TransactionBO] Storing the transaction at database', JSON.stringify(entity));
 
             return transactionDAO.save(entity);
           })
@@ -72,25 +89,27 @@ module.exports = function(dependencies) {
             transaction = modelParser.clear(r);
             var p = [];
 
-            logger.info('Getting the addresses involved on transaction', JSON.stringify(transaction));
+            logger.info('[TransactionBO] Getting the addresses involved on transaction', JSON.stringify(transaction));
 
             for (var i = 0; i < transaction.addresses.length; i++) {
-              logger.info('Getting informations from the address', transaction.addresses[i]);
-              p.push(addressDAO.getAll({address: transaction.addresses[i]}));
+              logger.info('[TransactionBO] Getting informations from the address', transaction.addresses[i]);
+              p.push(addressDAO.getAll({address: transaction.addresses[i], isEnabled: true}));
             }
 
             return Promise.all(p);
           })
           .then(function(r) {
             var p = [];
+            logger.info('[TransactionBO] Getting the returning from database', JSON.stringify(r));
+
             for (var i = 0; i < r.length; i++) {
               if (r[i].length === 0) {
-                logger.info('The address ' +
+                logger.info('[TransactionBO] The address ' +
                   transaction.addresses[i] +
-                  ' does not exists, it will be stored at database');
+                  ' does not exist, it will be stored at database');
                 p.push(addressBO.registerAddressFromDaemon(transaction.ownerId, transaction.addresses[i]));
               } else {
-                logger.info('The address ' +
+                logger.info('[TransactionBO] The address ' +
                   transaction.addresses[i] +
                   ' was found at database', JSON.stringify(transaction.addresses[i]));
                 p.push(Promise.resolve(r[i][0]));
@@ -101,13 +120,14 @@ module.exports = function(dependencies) {
           })
           .then(function(r) {
             var p = [];
-            logger.info('Updating the addresses balances', JSON.stringify(r));
+            logger.info('[TransactionBO] Updating the addresses balances', JSON.stringify(r));
 
             for (var i = 0; i < r.length; i++) {
-              logger.info('Updating the address balance', r[i].address);
+              logger.info('[TransactionBO] Updating the address balance ', JSON.stringify(r[i]));
               p.push(addressBO.updateBalance(r[i].address));
             }
 
+            logger.debug('[TransactionBO] Returning promises', p.length);
             return Promise.all(p);
           })
           .then(function(){

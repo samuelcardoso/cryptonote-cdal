@@ -19,6 +19,7 @@ module.exports = function() {
 
   var business = new TransactionBO({
     addressBO: addressBO,
+    addressDAO: DAOFactory.getDAO('address'),
     transactionDAO: DAOFactory.getDAO('transaction'),
     modelParser: new ModelParser(),
     daemonHelper: new DaemonHelper({
