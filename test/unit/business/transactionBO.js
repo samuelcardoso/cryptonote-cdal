@@ -10,6 +10,8 @@ var expect            = chai.expect;
 
 describe('Business > TransactionBO > ', function() {
   var transactionDAO = DAOFactory.getDAO('transaction');
+  var transactionRequestDAO = DAOFactory.getDAO('transactionRequest');
+  var blockchainTransactionDAO = DAOFactory.getDAO('blockchainTransaction');
   var addressDAO = DAOFactory.getDAO('address');
   var dateHelper = new DateHelper();
   var modelParser = new ModelParser();
@@ -17,6 +19,8 @@ describe('Business > TransactionBO > ', function() {
   var daemonHelper = new DaemonHelper({});
 
   var transactionBO = new TransactionBO({
+    transactionRequestDAO: transactionRequestDAO,
+    blockchainTransactionDAO: blockchainTransactionDAO,
     transactionDAO: transactionDAO,
     addressBO: addressBO,
     addressDAO: addressDAO,
@@ -42,7 +46,7 @@ describe('Business > TransactionBO > ', function() {
     it('getAll', function() {
       var getAllStub = sinon.stub(transactionDAO, 'getAll');
       getAllStub
-        .withArgs({isEnabled: true})
+        .withArgs({})
         .returns(Promise.resolve([]));
 
       return transactionBO.getAll()
@@ -56,6 +60,46 @@ describe('Business > TransactionBO > ', function() {
     it('save', function() {
       var now = new Date();
       dateHelper.setNow(now);
+
+      var transactionRequestSaveStub = sinon.stub(transactionRequestDAO, 'save');
+      transactionRequestSaveStub
+        .withArgs({
+          ownerId: 'ownerId',
+          transactionOwnerId: 'transactionOwnerId',
+          anonymity: 6,
+          fee: 1000000,
+          paymentId: 'PAYMENT_ID',
+          addresses: ['ADDRESS1', 'ADDRESS2'],
+          transfers: [{
+            amount: 100000000,
+            address: 'ADDRESS3'
+          }, {
+            amount: 100000000,
+            address: 'ADDRESS4'
+          }],
+          changeAddress: 'ADDRESS1',
+          status: 0,
+          createdAt: now
+        })
+        .returns(Promise.resolve({
+          _id: 'ID',
+          ownerId: 'ownerId',
+          transactionOwnerId: 'transactionOwnerId',
+          anonymity: 6,
+          fee: 1000000,
+          paymentId: 'PAYMENT_ID',
+          addresses: ['ADDRESS1', 'ADDRESS2'],
+          transfers: [{
+            amount: 100000000,
+            address: 'ADDRESS3'
+          }, {
+            amount: 100000000,
+            address: 'ADDRESS4'
+          }],
+          changeAddress: 'ADDRESS1',
+          status: 0,
+          createdAt: now
+        }));
 
       var sendTransactionStub = sinon.stub(daemonHelper, 'sendTransaction');
       sendTransactionStub
@@ -80,6 +124,51 @@ describe('Business > TransactionBO > ', function() {
           }
         }));
 
+      var transactionRequestUpdateStub = sinon.stub(transactionRequestDAO, 'update');
+      transactionRequestUpdateStub
+        .withArgs({
+          _id: 'ID',
+          ownerId: 'ownerId',
+          transactionOwnerId: 'transactionOwnerId',
+          anonymity: 6,
+          fee: 1000000,
+          paymentId: 'PAYMENT_ID',
+          addresses: ['ADDRESS1', 'ADDRESS2'],
+          transfers: [{
+            amount: 100000000,
+            address: 'ADDRESS3'
+          }, {
+            amount: 100000000,
+            address: 'ADDRESS4'
+          }],
+          changeAddress: 'ADDRESS1',
+          status: 0,
+          createdAt: now,
+          transactionHash: 'transactionHash',
+          updatedAt: now
+        })
+        .returns(Promise.resolve({
+          _id: 'ID',
+          ownerId: 'ownerId',
+          transactionOwnerId: 'transactionOwnerId',
+          anonymity: 6,
+          fee: 1000000,
+          paymentId: 'PAYMENT_ID',
+          addresses: ['ADDRESS1', 'ADDRESS2'],
+          transfers: [{
+            amount: 100000000,
+            address: 'ADDRESS3'
+          }, {
+            amount: 100000000,
+            address: 'ADDRESS4'
+          }],
+          changeAddress: 'ADDRESS1',
+          status: 0,
+          createdAt: now,
+          transactionHash: 'transactionHash',
+          updatedAt: now
+        }));
+
       var getTransactionStub = sinon.stub(daemonHelper, 'getTransaction');
       getTransactionStub
         .withArgs('transactionHash')
@@ -93,62 +182,28 @@ describe('Business > TransactionBO > ', function() {
           }
         }));
 
-      var saveStub = sinon.stub(transactionDAO, 'save');
-      saveStub
+      var blockchainTransactionSaveStub = sinon.stub(blockchainTransactionDAO, 'save');
+      blockchainTransactionSaveStub
         .withArgs({
-          ownerId: 'ownerId',
-          anonymity: 6,
-          fee: 1000000,
-          paymentId: 'PAYMENT_ID',
-          addresses: ['ADDRESS1', 'ADDRESS2'],
-          transfers: [{
-            amount: 100000000,
-            address: 'ADDRESS3'
-          }, {
-            amount: 100000000,
-            address: 'ADDRESS4'
-          }],
-          changeAddress: 'ADDRESS1',
-          transactionHash: 'transactionHash',
-          createdAt: now,
-          isConfirmed: false,
-          isNotified: false,
           blockIndex: 1,
           timestamp: 2,
           amount: 3
         })
         .returns(Promise.resolve({
           _id: 'ID',
-          ownerId: 'ownerId',
-          anonymity: 6,
-          fee: 1000000,
-          paymentId: 'PAYMENT_ID',
-          addresses: ['ADDRESS1', 'ADDRESS2'],
-          transfers: [{
-            amount: 100000000,
-            address: 'ADDRESS3'
-          }, {
-            amount: 100000000,
-            address: 'ADDRESS4'
-          }],
-          changeAddress: 'ADDRESS1',
-          transactionHash: 'transactionHash',
-          createdAt: now,
-          isConfirmed: false,
-          isNotified: false,
           blockIndex: 1,
           timestamp: 2,
           amount: 3
         }));
 
-      var getAllStub = sinon.stub(addressDAO, 'getAll');
+      var getAllStub = sinon.stub(addressBO, 'getAll');
       getAllStub
-        .withArgs({address: 'ADDRESS1',  isEnabled: true})
+        .withArgs({address: 'ADDRESS1'})
         .returns(Promise.resolve([{
           address:'ADDRESS1'
         }]));
       getAllStub
-        .withArgs({address: 'ADDRESS2',  isEnabled: true})
+        .withArgs({address: 'ADDRESS2'})
         .returns(Promise.resolve([]));
 
       var registerAddressFromDaemonStub = sinon.stub(addressBO, 'registerAddressFromDaemon');
@@ -169,6 +224,7 @@ describe('Business > TransactionBO > ', function() {
       return transactionBO.save({
         ownerId: 'ownerId',
         anonymity: 6,
+        transactionOwnerId: 'transactionOwnerId',
         fee: 1000000,
         paymentId: 'PAYMENT_ID',
         addresses: ['ADDRESS1', 'ADDRESS2'],
@@ -185,6 +241,7 @@ describe('Business > TransactionBO > ', function() {
           expect(r).to.be.deep.equal({
             id: 'ID',
             ownerId: 'ownerId',
+            transactionOwnerId: 'transactionOwnerId',
             anonymity: 6,
             fee: 1000000,
             paymentId: 'PAYMENT_ID',
@@ -197,27 +254,174 @@ describe('Business > TransactionBO > ', function() {
               address: 'ADDRESS4'
             }],
             changeAddress: 'ADDRESS1',
-            transactionHash: 'transactionHash',
+            status: 1,
             createdAt: now,
-            isConfirmed: false,
-            isNotified: false,
-            blockIndex: 1,
-            timestamp: 2,
-            amount: 3
+            transactionHash: 'transactionHash',
+            updatedAt: now
           });
+          expect(transactionRequestSaveStub.callCount).to.be.equal(1);
+          expect(transactionRequestUpdateStub.callCount).to.be.equal(1);
+          expect(blockchainTransactionSaveStub.callCount).to.be.equal(1);
           expect(sendTransactionStub.callCount).to.be.equal(1);
           expect(getTransactionStub.callCount).to.be.equal(1);
-          expect(saveStub.callCount).to.be.equal(1);
           expect(getAllStub.callCount).to.be.equal(2);
           expect(registerAddressFromDaemonStub.callCount).to.be.equal(1);
           expect(updateBalanceStub.callCount).to.be.equal(2);
 
+          transactionRequestSaveStub.restore();
+          transactionRequestUpdateStub.restore();
+          blockchainTransactionSaveStub.restore();
           sendTransactionStub.restore();
           getTransactionStub.restore();
-          saveStub.restore();
           getAllStub.restore();
           registerAddressFromDaemonStub.restore();
           updateBalanceStub.restore();
+        });
+    });
+
+    /*it('getByTransactionHash', function() {
+      var getAll = sinon.stub(transactionDAO, 'getAll');
+      getAll
+        .withArgs({
+          ownerId: 'ownerId',
+          transactionHash: 'transactionHash'
+        })
+        .returns(Promise.resolve([]));
+
+      return transactionBO.getByTransactionHash('ownerId', 'transactionHash')
+        .then(function(r){
+          expect(r).to.be.null;
+          expect(getAll.callCount).to.be.equal(1);
+          getAll.restore();
+        });
+    });*/
+
+    it('parseTransaction - transaction not found', function() {
+      var now = new Date();
+      var getNowStub = sinon.stub(dateHelper, 'getNow');
+      getNowStub
+        .withArgs()
+        .returns(now);
+
+      var getAll = sinon.stub(blockchainTransactionDAO, 'getAll');
+      getAll
+        .withArgs({
+          transactionHash: 'transactionHash'
+        })
+        .returns(Promise.resolve([]));
+
+      var saveStub = sinon.stub(blockchainTransactionDAO, 'save');
+      saveStub
+        .withArgs({
+          transactionHash: 'transactionHash',
+          blockIndex: 1,
+          timestamp: 2,
+          createdAt: now,
+          isEnabled: true
+        })
+        .returns(Promise.resolve({
+          _id: 'ID',
+          transactionHash: 'transactionHash',
+          blockIndex: 1,
+          timestamp: 2,
+          createdAt: now
+        }));
+
+      return transactionBO.parseTransaction({
+          transactionHash: 'transactionHash',
+          blockIndex: 1,
+          timestamp: 2
+        })
+        .then(function(r){
+          expect(r).to.be.deep.equal({
+            id: 'ID',
+            blockIndex: 1,
+            timestamp: 2,
+            transactionHash: 'transactionHash',
+            createdAt: now
+          });
+          expect(getNowStub.callCount).to.be.equal(1);
+          expect(getAll.callCount).to.be.equal(1);
+          expect(saveStub.callCount).to.be.equal(1);
+          getNowStub.restore();
+          getAll.restore();
+          saveStub.restore();
+        });
+    });
+
+    it('parseTransaction - transaction found', function() {
+      var now = new Date();
+      var getNowStub = sinon.stub(dateHelper, 'getNow');
+      getNowStub
+        .withArgs()
+        .returns(now);
+
+      var getAll = sinon.stub(blockchainTransactionDAO, 'getAll');
+      getAll
+        .withArgs({
+          transactionHash: 'transactionHash'
+        })
+        .returns(Promise.resolve([{
+          id: 'ID',
+          transactionHash: 'transactionHash',
+          blockIndex: 1,
+          timestamp: 2,
+          createdAt: now,
+          updatedAt: now
+        }]));
+
+      var saveStub = sinon.stub(blockchainTransactionDAO, 'update');
+      saveStub
+        .withArgs({
+          _id: 'ID',
+          transactionHash: 'transactionHash',
+          blockIndex: 1,
+          timestamp: 2,
+          createdAt: now,
+          updatedAt: now
+        })
+        .returns(Promise.resolve({
+          _id: 'ID',
+          transactionHash: 'transactionHash',
+          blockIndex: 1,
+          timestamp: 2,
+          createdAt: now,
+          updatedAt: now
+        }));
+
+      return transactionBO.parseTransaction({
+          transactionHash: 'transactionHash',
+          blockIndex: 1,
+          timestamp: 2
+        })
+        .then(function(r){
+          expect(r).to.be.deep.equal({
+            id: 'ID',
+            createdAt: now,
+            blockIndex: 1,
+            timestamp: 2,
+            transactionHash: 'transactionHash',
+            updatedAt: now
+          });
+          expect(getNowStub.callCount).to.be.equal(1);
+          expect(getAll.callCount).to.be.equal(1);
+          expect(saveStub.callCount).to.be.equal(1);
+          getNowStub.restore();
+          getAll.restore();
+          saveStub.restore();
+        });
+    });
+
+    it('updateIsConfirmedFlag', function() {
+      var updateIsConfirmedFlagStub = sinon.stub(transactionDAO, 'updateIsConfirmedFlag');
+      updateIsConfirmedFlagStub
+        .withArgs(1)
+        .returns(Promise.resolve());
+
+      return transactionBO.updateIsConfirmedFlag(1)
+        .then(function(){
+          expect(updateIsConfirmedFlagStub.callCount).to.be.equal(1);
+          updateIsConfirmedFlagStub.restore();
         });
     });
   });

@@ -13,19 +13,23 @@ module.exports = function(){
       type: String,
       required: false,
     },
+    extra: {
+      type: String,
+      required: false
+    },
+    status: {
+      type: Number,
+      required: true
+    },
+    anonymity: {
+      type: Number,
+      required: true
+    },
     amount: {
       type: Number,
       required: true
     },
-    isConfirmed: {
-      type: Boolean,
-      required: true
-    },
-    isNotified: {
-      type: Boolean,
-      required: true
-    },
-    blockIndex: {
+    fee: {
       type: Number,
       required: true
     },
@@ -33,14 +37,29 @@ module.exports = function(){
       type: String,
       required: true
     },
-    fromAddress: [{
+    paymentId: {
+      type: String,
+      required: false
+    },
+    addresses: [{
         type: String,
         required: true
       }
     ],
-    address: {
+    transfers: [{
+        amount: {
+            type: Number,
+            required: true
+          },
+        address: {
+          type: String,
+          required: false
+        }
+      }
+    ],
+    changeAddress: {
       type: String,
-      required: true
+      required: false
     },
     createdAt: {
       type: Date,
@@ -52,7 +71,7 @@ module.exports = function(){
     }
   });
 
-  model = model ? model : mongoose.model('transactions', schema);
+  model = model ? model : mongoose.model('transactionRequests', schema);
 
   return model;
 };
