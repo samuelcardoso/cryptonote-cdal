@@ -116,6 +116,28 @@ module.exports = function() {
           });
         });
       });
+    },
+
+    updateTransactionInfo: function(transactionHash, blockIndex, timestamp) {
+      return new Promise(function(resolve, reject) {
+        logger.log('info', '[TransactionDAO] Updating isConfirmedFlag from transactions ', confirmedBlockIndex);
+
+        model.updateMany({transactionHash: transactionHash},
+          $.flatten({
+            blockIndex: blockIndex,
+            timestamp: timestamp
+          }, {multi: true}))
+        .then(function() {
+          logger.log('info', '[TransactionDAO] The transactions has been updated succesfully');
+          resolve();
+        }).catch(function(error) {
+          logger.error('[TransactionDAO] An error has ocurred while updating transaction informations', error);
+          reject({
+            status: 422,
+            message: error
+          });
+        });
+      });
     }
   };
 };

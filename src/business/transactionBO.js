@@ -49,6 +49,48 @@ module.exports = function(dependencies) {
       });
     },
 
+    getByTransactionHash: function(transactionHash) {
+      return new Promise(function(resolve, reject) {
+        var filter = {
+          transactionHash: transactionHash,
+        };
+
+        transactionDAO.getAll(filter)
+          .then(function(transactions) {
+            if (transactions.length) {
+              logger.info('[TransactionBO] Transaction found by transactionHash', JSON.stringify(transactions[0]));
+              return transactions[0];
+            } else {
+              logger.info('[TransactionBO] Transaction not found by transactionHash', transactionHash);
+              return null;
+            }
+          })
+          .then(resolve)
+          .catch(reject);
+      });
+    },
+
+    getTransactionRequestByTransactionHash: function(transactionHash) {
+      return new Promise(function(resolve, reject) {
+        var filter = {
+          transactionHash: transactionHash,
+        };
+
+        transactionRequestDAO.getAll(filter)
+          .then(function(transactions) {
+            if (transactions.length) {
+              logger.info('[TransactionBO] Transaction request found by transactionHash', JSON.stringify(transactions[0]));
+              return transactions[0];
+            } else {
+              logger.info('[TransactionBO] Transaction request not found by transactionHash', transactionHash);
+              return null;
+            }
+          })
+          .then(resolve)
+          .catch(reject);
+      });
+    },
+
     updateTransactionRequestAddressesBalances: function(transactionRequest) {
       return new Promise(function(resolve, reject) {
         var chain = Promise.resolve();
@@ -184,22 +226,142 @@ module.exports = function(dependencies) {
 
     updateBlockchainTransaction: function(transaction, blockchainTransaction) {
       return new Promise(function(resolve, reject) {
-        var o = modelParser.prepare(transaction);
-        o.blockIndex = blockchainTransaction.blockIndex;
-        o.timestamp = blockchainTransaction.timestamp;
-        o.updatedAt = dateHelper.getNow();
+        var chain = Promise.resolve();
+        var rBlockchainTransaction = null;
 
-        blockchainTransactionDAO.update(o)
+        chain
+          .then(function() {
+            var o = modelParser.prepare(transaction);
+            o.blockIndex = blockchainTransaction.blockIndex;
+            o.timestamp = blockchainTransaction.timestamp;
+            o.updatedAt = dateHelper.getNow();
+
+            return blockchainTransactionDAO.update(o);
+          })
+          .then(function(r) {
+            rBlockchainTransaction = r;
+            return transactionDAO.updateTransactionInfo(blockchainTransaction.transactionHash,
+              blockchainTransaction.blockIndex,
+              blockchainTransaction.timestamp);
+          })
+          .then(function() {
+            return rBlockchainTransaction;
+          })
           .then(resolve)
           .catch(reject);
       });
     },
 
     createBlockchainTransaction: function(blockchainTransaction) {
+      var self = this;
+
       return new Promise(function(resolve, reject) {
-        var o = modelParser.prepare(blockchainTransaction, true);
-        o.createdAt = dateHelper.getNow();
-        blockchainTransactionDAO.save(o)
+        var chain = Promise.resolve();
+        var transactionRequest = null;
+        var addressesAmount = {};
+        var rBlockchainTransaction = null;
+
+        chain
+          .then(function() {
+            logger.info('[TransactionBO] Trying to find the transaction request linked to this transactionHash',
+              blockchainTransaction.transactionHash);
+            return self.getTransactionRequestByTransactionHash(blockchainTransaction.transactionHash);
+          })
+          .then(function(r) {
+            transactionRequest = r;
+
+            if (!r) {
+              logger.info('[TransactionBO] There is no transaction request linked to this transactionHash',
+                blockchainTransaction.transactionHash);
+            } else {
+              logger.info('[TransactionBO] Transaction request linked to this transactionHash was found',
+                blockchainTransaction.transactionHash);
+            }
+
+            var o = modelParser.prepare(blockchainTransaction, true);
+            o.createdAt = dateHelper.getNow();
+
+            logger.info('[TransactionBO] Saving the blockchain transaction', JSON.stringify(o));
+
+            return blockchainTransactionDAO.save(o);
+          })
+          .then(function(r) {
+            rBlockchainTransaction = r;
+            logger.info('[TransactionBO] Calculating the transaction for each transfer', JSON.stringify(rBlockchainTransaction));
+
+            for (var i = 0; i < blockchainTransaction.transfers.length; i++) {
+              var address = blockchainTransaction.transfers[i].address;
+
+              if (address) {
+                if (addressesAmount[address] !== undefined) {
+                  addressesAmount[address].amount += blockchainTransaction.transfers[i].amount;
+                } else {
+                  addressesAmount[address] = {
+                    amount: blockchainTransaction.transfers[i].amount,
+                    address: address
+                  };
+                }
+              }
+            }
+
+            logger.info('[TransacionBO] The amount for each address was calculated', JSON.stringify(addressesAmount));
+
+            return;
+          })
+          .then(function() {
+            var p = [];
+
+            logger.info('[TransactionBO] Trying to find the address at database to get the ownerId');
+            for (var address in addressesAmount) {
+              p.push(addressBO.getByAddress(address));
+            }
+
+            logger.debug('[TransactionBO] Returning promises', p.length);
+            return Promise.all(p);
+          })
+          .then(function(r) {
+            var p = [];
+
+            for (var i = 0; i < r.length; i++) {
+              if (r[i]) {
+                logger.info('[TransactionBO] The owner for the address was found', JSON.stringify(r[i]));
+                addressesAmount[r[i].address].ownerId = r[i].ownerId;
+              } else {
+                logger.info('[TransactionBO] There is no address at the database for the specified address at transfer index ', i);
+              }
+            }
+
+            logger.debug('[TransactionBO] Returning promises', r.length);
+            return Promise.all(p);
+          })
+          .then(function() {
+            var p = [];
+
+            for (var address in addressesAmount) {
+              if (addressesAmount[address].ownerId) {
+                logger.info('[TransactionBO] Saving the transaction', JSON.stringify(addressesAmount[address]));
+                p.push(transactionDAO.save({
+                  ownerId: addressesAmount[address].ownerId,
+                  ownerTransactionId: transactionRequest ? transactionRequest.ownerTransactionId : null,
+                  amount: addressesAmount[address].amount,
+                  isConfirmed: false,
+                  isNotified: false,
+                  blockIndex: blockchainTransaction.blockIndex,
+                  transactionHash: blockchainTransaction.transactionHash,
+                  address: addressesAmount[address].address,
+                  createdAt: dateHelper.getNow()
+                }));
+              } else {
+                logger.warn('[TransactionBO] The transaction for the address will be ignored', JSON.stringify(addressesAmount[address]));
+              }
+            }
+
+            logger.debug('[TransactionBO] Returning promises', p.length);
+            return Promise.all(p);
+          })
+          .then(function() {
+            return modelParser.clear(rBlockchainTransaction);
+          })
           .then(resolve)
           .catch(reject);
       });

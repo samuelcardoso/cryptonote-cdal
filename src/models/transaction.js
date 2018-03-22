@@ -7,7 +7,7 @@ module.exports = function(){
   var schema = mongooseSchema({
     ownerId: {
       type: String,
-      required: false,
+      required: true,
     },
     ownerTransactionId: {
       type: String,
@@ -33,11 +33,6 @@ module.exports = function(){
       type: String,
       required: true
     },
-    fromAddress: [{
-        type: String,
-        required: true
-      }
-    ],
     address: {
       type: String,
       required: true

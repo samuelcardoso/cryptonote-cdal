@@ -12,7 +12,7 @@ module.exports = function(dependencies, autoRun) {
     autoRun: autoRun,
 
     run: function() {
-      return this.synchronizeToBlockChain();
+      return this.synchronizeToBlockchain();
     },
 
     _parseTransactionsFromDaemon: function(r) {
@@ -176,7 +176,7 @@ module.exports = function(dependencies, autoRun) {
       });
     },
 
-    synchronizeToBlockChain: function() {
+    synchronizeToBlockchain: function() {
       var self = this;
       var chain = Promise.resolve();
       var currentBlockIndex = null;
@@ -281,11 +281,11 @@ module.exports = function(dependencies, autoRun) {
             if (self.autoRun) {
               if (nextBlockIndex < blockCount && !flagObjectNotFound) {
                 logger.info('[BOSWorker] There is more block hases...');
-                return self.synchronizeToBlockChain();
+                return self.synchronizeToBlockchain();
               } else {
                 logger.info('[BOSWorker] There is no more block hases. A new verification will occurr in 10s');
                 setTimeout(function() {
-                  self.synchronizeToBlockChain();
+                  self.synchronizeToBlockchain();
                 }, 10 * 1000);
               }
             }
@@ -301,7 +301,7 @@ module.exports = function(dependencies, autoRun) {
             if (self.autoRun) {
               logger.info('[BOSWorker] A new verification will occurr in 10s');
               setTimeout(function() {
-                self.synchronizeToBlockChain();
+                self.synchronizeToBlockchain();
               }, 10 * 1000);
             }
 

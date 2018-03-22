@@ -279,23 +279,6 @@ describe('Business > TransactionBO > ', function() {
         });
     });
 
-    /*it('getByTransactionHash', function() {
-      var getAll = sinon.stub(transactionDAO, 'getAll');
-      getAll
-        .withArgs({
-          ownerId: 'ownerId',
-          transactionHash: 'transactionHash'
-        })
-        .returns(Promise.resolve([]));
-
-      return transactionBO.getByTransactionHash('ownerId', 'transactionHash')
-        .then(function(r){
-          expect(r).to.be.null;
-          expect(getAll.callCount).to.be.equal(1);
-          getAll.restore();
-        });
-    });*/
-
     it('parseTransaction - transaction not found', function() {
       var now = new Date();
       var getNowStub = sinon.stub(dateHelper, 'getNow');
@@ -310,6 +293,15 @@ describe('Business > TransactionBO > ', function() {
         })
         .returns(Promise.resolve([]));
 
+      var transactionRequestGetAllStub = sinon.stub(transactionRequestDAO, 'getAll');
+      transactionRequestGetAllStub
+        .withArgs({
+          transactionHash: 'transactionHash'
+        })
+        .returns(Promise.resolve([{
+          ownerTransactionId: 'ownerTransactionId'
+        }]));
+
       var saveStub = sinon.stub(blockchainTransactionDAO, 'save');
       saveStub
         .withArgs({
@@ -317,20 +309,147 @@ describe('Business > TransactionBO > ', function() {
           blockIndex: 1,
           timestamp: 2,
           createdAt: now,
-          isEnabled: true
+          isEnabled: true,
+          transfers:[{
+            address: 'ADDRESS1',
+            amount: 100000000,
+            type: 0
+          },
+          {
+            address: 'ADDRESS2',
+            amount: 100000000,
+            type: 0
+          },
+          {
+            address: 'ADDRESS3',
+            amount: 290000000,
+            type:2
+          },
+          {
+            address: 'ADDRESS3',
+            amount: -500000000,
+            type:0
+          }]
         })
         .returns(Promise.resolve({
           _id: 'ID',
           transactionHash: 'transactionHash',
           blockIndex: 1,
           timestamp: 2,
+          createdAt: now,
+          transfers:[{
+            address:'ADDRESS1',
+            amount: 100000000,
+            type:0
+          },
+          {
+            address:'ADDRESS2',
+            amount: 100000000,
+            type:0
+          },
+          {
+            address:'ADDRESS3',
+            amount: 290000000,
+            type:2
+          },
+          {
+            address:'ADDRESS3',
+            amount: -500000000,
+            type:0
+          }]
+        }));
+
+      var getByAddressStub = sinon.stub(addressBO, 'getByAddress');
+      getByAddressStub
+        .withArgs('ADDRESS1')
+        .returns(Promise.resolve({
+          address: 'ADDRESS1',
+          ownerId: 'ownerId'
+        }));
+      getByAddressStub
+        .withArgs('ADDRESS2')
+        .returns(Promise.resolve(null));
+      getByAddressStub
+        .withArgs('ADDRESS3')
+        .returns(Promise.resolve({
+          address: 'ADDRESS3',
+          ownerId: 'ownerId'
+        }));
+
+      var transactionSaveStub = sinon.stub(transactionDAO, 'save');
+      transactionSaveStub
+        .withArgs({
+          ownerId: 'ownerId',
+          ownerTransactionId: 'ownerTransactionId',
+          amount: 100000000,
+          isConfirmed: false,
+          isNotified: false,
+          blockIndex: 1,
+          transactionHash: 'transactionHash',
+          address: 'ADDRESS1',
+          createdAt: now
+        })
+        .returns(Promise.resolve({
+          _id: 'ID',
+          ownerId: 'ownerId',
+          ownerTransactionId: 'ownerTransactionId',
+          amount: 100000000,
+          isConfirmed: false,
+          isNotified: false,
+          blockIndex: 1,
+          transactionHash: 'transactionHash',
+          address: 'ADDRESS1',
+          createdAt: now
+        }));
+      transactionSaveStub
+        .withArgs({
+          ownerId: 'ownerId',
+          ownerTransactionId: 'ownerTransactionId',
+          amount: -210000000,
+          isConfirmed: false,
+          isNotified: false,
+          blockIndex: 1,
+          transactionHash: 'transactionHash',
+          address: 'ADDRESS3',
+          createdAt: now
+        })
+        .returns(Promise.resolve({
+          _id: 'ID',
+          ownerId: 'ownerId',
+          ownerTransactionId: 'ownerTransactionId',
+          amount: 100000000,
+          isConfirmed: false,
+          isNotified: false,
+          blockIndex: 1,
+          transactionHash: 'transactionHash',
+          address: 'ADDRESS1',
           createdAt: now
         }));
 
       return transactionBO.parseTransaction({
           transactionHash: 'transactionHash',
           blockIndex: 1,
-          timestamp: 2
+          timestamp: 2,
+          transfers:[{
+            address:'ADDRESS1',
+            amount:100000000,
+            type:0
+          },
+          {
+            address:'ADDRESS2',
+            amount: 100000000,
+            type:0
+          },
+          {
+            address:'ADDRESS3',
+            amount: 290000000,
+            type:2
+          },
+          {
+            address:'ADDRESS3',
+            amount: -500000000,
+            type:0
+          }]
         })
         .then(function(r){
           expect(r).to.be.deep.equal({
@@ -338,14 +457,41 @@ describe('Business > TransactionBO > ', function() {
             blockIndex: 1,
             timestamp: 2,
             transactionHash: 'transactionHash',
-            createdAt: now
+            createdAt: now,
+            transfers:[{
+              address:'ADDRESS1',
+              amount:100000000,
+              type:0
+            },
+            {
+              address:'ADDRESS2',
+              amount: 100000000,
+              type:0
+            },
+            {
+              address:'ADDRESS3',
+              amount: 290000000,
+              type:2
+            },
+            {
+              address:'ADDRESS3',
+              amount: -500000000,
+              type:0
+            }]
           });
-          expect(getNowStub.callCount).to.be.equal(1);
+          expect(getNowStub.callCount).to.be.equal(3);
           expect(getAll.callCount).to.be.equal(1);
+          expect(transactionRequestGetAllStub.callCount).to.be.equal(1);
           expect(saveStub.callCount).to.be.equal(1);
+          expect(getByAddressStub.callCount).to.be.equal(3);
+          expect(transactionSaveStub.callCount).to.be.equal(2);
+
           getNowStub.restore();
           getAll.restore();
+          transactionRequestGetAllStub.restore();
           saveStub.restore();
+          transactionSaveStub.restore();
+          getByAddressStub.restore();
         });
     });
 
@@ -389,6 +535,11 @@ describe('Business > TransactionBO > ', function() {
           updatedAt: now
         }));
 
+      var updateTransactionInfoStub = sinon.stub(transactionDAO, 'updateTransactionInfo');
+      updateTransactionInfoStub
+        .withArgs('transactionHash', 1, 1)
+        .returns(Promise.resolve());
+
       return transactionBO.parseTransaction({
           transactionHash: 'transactionHash',
           blockIndex: 1,
@@ -406,9 +557,12 @@ describe('Business > TransactionBO > ', function() {
           expect(getNowStub.callCount).to.be.equal(1);
           expect(getAll.callCount).to.be.equal(1);
           expect(saveStub.callCount).to.be.equal(1);
+          expect(updateTransactionInfoStub.callCount).to.be.equal(1);
+
           getNowStub.restore();
           getAll.restore();
           saveStub.restore();
+          updateTransactionInfoStub.restore();
         });
     });
 
