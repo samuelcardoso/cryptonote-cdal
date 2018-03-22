@@ -47,10 +47,11 @@ describe('Business > TransactionBO > ', function() {
       var getAllStub = sinon.stub(transactionDAO, 'getAll');
       getAllStub
         .withArgs({})
-        .returns(Promise.resolve([]));
+        .returns(Promise.resolve([{_id: 'ID'}]));
 
       return transactionBO.getAll()
-        .then(function(){
+        .then(function(r){
+          expect(r[0].id).to.be.equal('ID');
           expect(getAllStub.callCount).to.be.equal(1);
 
           getAllStub.restore();
@@ -576,6 +577,47 @@ describe('Business > TransactionBO > ', function() {
         .then(function(){
           expect(updateIsConfirmedFlagStub.callCount).to.be.equal(1);
           updateIsConfirmedFlagStub.restore();
+        });
+    });
+
+    it('getByTransactionHash - transaction not found', function() {
+      var getAllStub = sinon.stub(transactionDAO, 'getAll');
+      getAllStub
+        .withArgs({transactionHash: 'transactionHash'})
+        .returns(Promise.resolve([]));
+
+      return transactionBO.getByTransactionHash('transactionHash')
+        .then(function(){
+          expect(getAllStub.callCount).to.be.equal(1);
+          getAllStub.restore();
+        });
+    });
+
+    it('getByTransactionHash - transaction found', function() {
+      var getAllStub = sinon.stub(transactionDAO, 'getAll');
+      getAllStub
+        .withArgs({transactionHash: 'transactionHash'})
+        .returns(Promise.resolve([{_id: 'ID'}]));
+
+      return transactionBO.getByTransactionHash('transactionHash')
+        .then(function(r){
+          expect(r._id).to.be.equal('ID');
+          expect(getAllStub.callCount).to.be.equal(1);
+          getAllStub.restore();
+        });
+    });
+
+    it('getTransactionRequestByTransactionHash - transaction found', function() {
+      var getAllStub = sinon.stub(transactionRequestDAO, 'getAll');
+      getAllStub
+        .withArgs({transactionHash: 'transactionHash'})
+        .returns(Promise.resolve([]));
+
+      return transactionBO.getTransactionRequestByTransactionHash('transactionHash')
+        .then(function(r){
+          expect(r).to.be.null;
+          expect(getAllStub.callCount).to.be.equal(1);
+          getAllStub.restore();
         });
     });
   });
