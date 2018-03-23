@@ -132,7 +132,7 @@ module.exports = function(dependencies) {
               return self.createAddressFromDaemon(ownerId);
             } else {
               logger.info('[AddressBO] A free address was found at database', JSON.stringify(r));
-              return r;
+              return modelParser.clear(r);
             }
           })
           .then(function(r) {

@@ -4,13 +4,73 @@ var logger          = require('../config/logger');
 module.exports = function(dependencies) {
   var configurationBO = dependencies.configurationBO;
   var addressBO = dependencies.addressBO;
+  var daemonHelper = dependencies.daemonHelper;
 
   return {
     dependencies: dependencies,
 
     run: function() {
+      var self = this;
+
       logger.info('[AAPMSWorker] Starting the process to maintain the pool');
-      return this.maintainPool();
+
+      return new Promise(function(resolve, reject) {
+        var chain = Promise.resolve();
+
+        chain
+          .then(function() {
+            logger.info('[AAPMSWorker] Starting the process to synchronize the addresses');
+            return self.synchronizeAddresses();
+          })
+          .then(function() {
+            logger.info('[AAPMSWorker] Starting the process to keep to pool full');
+            return self.maintainPool();
+          })
+          .then(resolve)
+          .catch(reject);
+      });
+    },
+
+    synchronizeAddresses: function() {
+      return new Promise(function(resolve, reject) {
+        var chain = Promise.resolve();
+        var addresses = [];
+
+        logger.info('[AAPMSWorker] Synchroninzing to daemon addresses');
+        chain
+          .then(function() {
+            logger.info('[AAPMSWorker] Getting daemon available addresses');
+            return daemonHelper.getAddresses();
+          })
+          .then(function(r) {
+            addresses = r.result.addresses;
+            var p = [];
+
+            logger.debug('[AAPMSWorker] Daemon available addresses', JSON.stringify(addresses));
+            for (var i = 0; i < addresses.length; i++) {
+              logger.info('[AAPMSWorker] Checking if the address exists at database', JSON.stringify(addresses[i]));
+              p.push(addressBO.getByAddress(null, addresses[i]));
+            }
+
+            logger.debug('[AAPMSWorker] Returning promises', p.length);
+            return Promise.all(p);
+          })
+          .then(function(r) {
+            var p = [];
+
+            for (var i = 0; i < r.length; i++) {
+              if (!r[i]) {
+                logger.info('[AAPMSWorker] The address does not exist at database, it will be stored', JSON.stringify(addresses[i]));
+                p.push(addressBO.registerAddressFromDaemon(null, addresses[i]));
+              }
+            }
+
+            logger.debug('[AAPMSWorker] Returning promises', p.length);
+            return Promise.all(p);
+          })
+          .then(resolve)
+          .catch(reject);
+      });
     },
 
     maintainPool: function() {

@@ -1,33 +1,8 @@
-var TransactionBO         = require('../../business/transactionBO');
-var AddressBO             = require('../../business/addressBO');
-var DAOFactory            = require('../../daos/daoFactory');
+var BOFactory             = require('../../business/boFactory');
 var HTTPResponseHelper    = require('../../helpers/httpResponseHelper');
-var ModelParser           = require('../../models/modelParser');
-var DaemonHelper          = require('../../helpers/daemonHelper');
-var RequestHelper         = require('../../helpers/requestHelper');
 
 module.exports = function() {
-  var addressBO = new AddressBO({
-    addressDAO: DAOFactory.getDAO('address'),
-    modelParser: new ModelParser(),
-    daemonHelper: new DaemonHelper({
-      requestHelper: new RequestHelper({
-        request: require('request')
-      })
-    })
-  });
-
-  var business = new TransactionBO({
-    addressBO: addressBO,
-    addressDAO: DAOFactory.getDAO('address'),
-    transactionDAO: DAOFactory.getDAO('transaction'),
-    modelParser: new ModelParser(),
-    daemonHelper: new DaemonHelper({
-      requestHelper: new RequestHelper({
-        request: require('request')
-      })
-    })
-  });
+  var business = BOFactory.getBO('transaction');
 
   return {
     getAll: function(req, res) {
@@ -44,17 +19,35 @@ module.exports = function() {
         .catch(rh.error);
     },
 
-    getAllByAddress: function(req, res) {
+    getAll: function(req, res) {
       var rh = new HTTPResponseHelper(req, res);
 
-      var filter = {addresses: [req.params.address]};
+      var filter = {};
 
       if (req.params.ownerId) {
         filter.ownerId = req.params.ownerId;
       }
 
+      if (req.params.address) {
+        filter.address = req.params.address;
+      }
+
+      if (req.params.id) {
+        filter._id = req.params.id;
+      }
+
       business.getAll(filter)
-        .then(rh.ok)
+        .then(function(r) {
+          if (req.params.id) {
+            if (r.length > 0) {
+              rh.ok(r[0]);
+            } else {
+              rh.ok(null);
+            }
+          } else {
+            rh.ok(r);
+          }
+        })
         .catch(rh.error);
     },
 
@@ -83,10 +76,24 @@ module.exports = function() {
         .catch(rh.error);
     },
 
-    getByTransactionHash: function(req, res) {
+    getBlockchainTransactionByTransaction: function(req, res) {
       var rh = new HTTPResponseHelper(req, res);
 
-      business.getByAddress(req.params.ownerId, req.params.transactionHash)
+      var filter = {};
+
+      if (req.params.ownerId) {
+        filter.ownerId = req.params.ownerId;
+      }
+
+      if (req.params.address) {
+        filter.address = req.params.address;
+      }
+
+      if (req.params.id) {
+        filter._id = req.params.id;
+      }
+
+      business.getBlockchainTransactionByTransaction(filter)
         .then(rh.ok)
         .catch(rh.error);
     }

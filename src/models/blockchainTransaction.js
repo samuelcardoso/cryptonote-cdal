@@ -33,6 +33,10 @@ module.exports = function(){
       type: Number,
       required: false,
     },
+    isConfirmed: {
+      type: Boolean,
+      required: false
+    },
     timestamp: {
       type: Number,
       required: true

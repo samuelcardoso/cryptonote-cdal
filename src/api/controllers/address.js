@@ -1,29 +1,10 @@
-var AddressBO             = require('../../business/addressBO');
-var ConfigurationBO       = require('../../business/configurationBO');
-var DAOFactory            = require('../../daos/daoFactory');
+var BOFactory             = require('../../business/boFactory');
 var HTTPResponseHelper    = require('../../helpers/httpResponseHelper');
-var ModelParser           = require('../../models/modelParser');
-var DaemonHelper          = require('../../helpers/daemonHelper');
-var DateHelper            = require('../../helpers/dateHelper');
-var RequestHelper         = require('../../helpers/requestHelper');
 var AAPMSWorker           = require('../../workers/aapmsWorker');
 
 module.exports = function() {
-  var business = new AddressBO({
-    addressDAO: DAOFactory.getDAO('address'),
-    modelParser: new ModelParser(),
-    dateHelper: new DateHelper(),
-    daemonHelper: new DaemonHelper({
-      requestHelper: new RequestHelper({
-        request: require('request')
-      })
-    })
-  });
-
-  var configurationBO = new ConfigurationBO({
-    configurationDAO: DAOFactory.getDAO('configuration'),
-    modelParser: new ModelParser()
-  });
+  var business = BOFactory.getBO('address');
+  var configurationBO = BOFactory.getBO('configuration');
 
   var aapmsWorker = new AAPMSWorker({
     addressBO: business,

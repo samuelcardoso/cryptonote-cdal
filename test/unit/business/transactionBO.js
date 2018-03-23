@@ -362,16 +362,16 @@ describe('Business > TransactionBO > ', function() {
 
       var getByAddressStub = sinon.stub(addressBO, 'getByAddress');
       getByAddressStub
-        .withArgs('ADDRESS1')
+        .withArgs(null, 'ADDRESS1')
         .returns(Promise.resolve({
           address: 'ADDRESS1',
           ownerId: 'ownerId'
         }));
       getByAddressStub
-        .withArgs('ADDRESS2')
+        .withArgs(null, 'ADDRESS2')
         .returns(Promise.resolve(null));
       getByAddressStub
-        .withArgs('ADDRESS3')
+        .withArgs(null, 'ADDRESS3')
         .returns(Promise.resolve({
           address: 'ADDRESS3',
           ownerId: 'ownerId'
@@ -509,7 +509,7 @@ describe('Business > TransactionBO > ', function() {
           transactionHash: 'transactionHash'
         })
         .returns(Promise.resolve([{
-          id: 'ID',
+          _id: 'ID',
           transactionHash: 'transactionHash',
           blockIndex: 1,
           timestamp: 2,
@@ -538,8 +538,8 @@ describe('Business > TransactionBO > ', function() {
 
       var updateTransactionInfoStub = sinon.stub(transactionDAO, 'updateTransactionInfo');
       updateTransactionInfoStub
-        .withArgs('transactionHash', 1, 1)
-        .returns(Promise.resolve());
+        .withArgs('transactionHash', 1, 2)
+        .returns(Promise.resolve({}));
 
       return transactionBO.parseTransaction({
           transactionHash: 'transactionHash',
@@ -572,11 +572,17 @@ describe('Business > TransactionBO > ', function() {
       updateIsConfirmedFlagStub
         .withArgs(1)
         .returns(Promise.resolve());
+      var updateIsConfirmedFlag2Stub = sinon.stub(blockchainTransactionDAO, 'updateIsConfirmedFlag');
+      updateIsConfirmedFlag2Stub
+        .withArgs(1)
+        .returns(Promise.resolve());
 
       return transactionBO.updateIsConfirmedFlag(1)
         .then(function(){
           expect(updateIsConfirmedFlagStub.callCount).to.be.equal(1);
+          expect(updateIsConfirmedFlag2Stub.callCount).to.be.equal(1);
           updateIsConfirmedFlagStub.restore();
+          updateIsConfirmedFlag2Stub.restore();
         });
     });
 

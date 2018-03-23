@@ -210,23 +210,6 @@ describe('Business > AddressBO > ', function() {
           }
         });
 
-        console.log(JSON.stringify({
-          ownerId: 'ownerId',
-          address: 'address',
-          keys: {
-            spendPublicKey: 'spendPublicKey',
-            spendSecretKey: 'spendSecretKey'
-          },
-          createdAt: now,
-          updatedAt: now,
-          isEnabled: true,
-          balance: {
-            available: 0,
-            locked: 0
-          },
-          _id: 'ID',
-        }));
-
         var updateStub = sinon.stub(addressDAO, 'update');
         updateStub
           .withArgs({

@@ -13,10 +13,10 @@ module.exports = function() {
       return new Promise(function(resolve, reject) {
         model.remove({}, function(err) {
           if (err) {
-            logger.log('error', '[TransactionDAO] An error has occurred while deleting all transactions', error);
+            logger.error('[TransactionDAO] An error has occurred while deleting all transactions', error);
             reject(err);
           } else {
-            logger.log('info', '[TransactionDAO] The transactions have been deleted succesfully');
+            logger.info('[TransactionDAO] The transactions have been deleted succesfully');
             resolve();
           }
         });
@@ -34,7 +34,7 @@ module.exports = function() {
             logger.info('[TransactionDAO] %d transactions were returned', items.length);
             resolve(items);
           }).catch(function(erro) {
-            logger.log('error', '[TransactionDAO] An error has ocurred while getting transactions from database', erro);
+            logger.error('[TransactionDAO] An error has ocurred while getting transactions from database', erro);
             reject(erro);
           });
       });
@@ -43,19 +43,19 @@ module.exports = function() {
     getById: function(id) {
       var self = this;
       return new Promise(function(resolve, reject) {
-        logger.log('info', '[TransactionDAO] Getting a transaction by id %s', id);
+        logger.info('[TransactionDAO] Getting a transaction by id %s', id);
 
         self.getAll({_id: id})
         .then(function(users) {
           if (users.length === 0) {
             resolve(null);
-            logger.log('info', '[TransactionDAO] The transaction not found');
+            logger.info('[TransactionDAO] The transaction not found');
           } else {
             resolve(users[0]);
-            logger.log('info', '[TransactionDAO] The transaction was found');
+            logger.info('[TransactionDAO] The transaction was found');
           }
         }).catch(function(erro) {
-            logger.log('error', '[TransactionDAO] An error has occurred while getting a transaction by id %s', id, erro);
+            logger.error('[TransactionDAO] An error has occurred while getting a transaction by id %s', id, erro);
             reject(erro);
         });
       });
@@ -64,10 +64,10 @@ module.exports = function() {
     save: function(entity) {
       var self = this;
       return new Promise(function(resolve, reject) {
-        logger.log('info', '[TransactionDAO] Creating a new transaction', JSON.stringify(entity));
+        logger.info('[TransactionDAO] Creating a new transaction', JSON.stringify(entity));
         model.create(entity)
         .then(function(item) {
-          logger.log('info', '[TransactionDAO] The transaction has been created succesfully', JSON.stringify(item));
+          logger.info('[TransactionDAO] The transaction has been created succesfully', JSON.stringify(item));
           return self.getById(item._id);
         })
         .then(resolve)
@@ -83,11 +83,11 @@ module.exports = function() {
 
     update: function(entity) {
       return new Promise(function(resolve, reject) {
-        logger.log('info', '[TransactionDAO] Update a transaction', JSON.stringify(entity));
+        logger.info('[TransactionDAO] Update a transaction', JSON.stringify(entity));
 
         model.findByIdAndUpdate(entity._id, $.flatten(entity), {'new': true, fields: projectionCommonFields})
         .then(function(item) {
-          logger.log('info', '[TransactionDAO] The transaction has been updated succesfully');
+          logger.info('[TransactionDAO] The transaction has been updated succesfully');
           logger.debug(JSON.stringify(item.toObject()));
           resolve(item.toObject());
         }).catch(function(error) {
@@ -100,11 +100,11 @@ module.exports = function() {
       });
     },
 
-    updateIsConfirmedFlag: function(transactionHash) {
+    updateIsConfirmedFlag: function(confirmedBlockIndex) {
       return new Promise(function(resolve, reject) {
         logger.log('info', '[TransactionDAO] Updating isConfirmedFlag from transactions ', confirmedBlockIndex);
 
-        model.updateMany({transactionHash: transactionHash}, $.flatten({isConfirmed: true}, {multi: true}))
+        model.updateMany({blockIndex: {$lte: confirmedBlockIndex}}, $.flatten({isConfirmed: true}, {multi: true}))
         .then(function() {
           logger.log('info', '[TransactionDAO] The transactions has been updated succesfully');
           resolve();
@@ -120,7 +120,7 @@ module.exports = function() {
 
     updateTransactionInfo: function(transactionHash, blockIndex, timestamp) {
       return new Promise(function(resolve, reject) {
-        logger.log('info', '[TransactionDAO] Updating isConfirmedFlag from transactions ', confirmedBlockIndex);
+        logger.info('[TransactionDAO] Updating transaction informations from transactions ', transactionHash, blockIndex, timestamp);
 
         model.updateMany({transactionHash: transactionHash},
           $.flatten({
@@ -128,7 +128,7 @@ module.exports = function() {
             timestamp: timestamp
           }, {multi: true}))
         .then(function() {
-          logger.log('info', '[TransactionDAO] The transactions has been updated succesfully');
+          logger.info('[TransactionDAO] The transactions has been updated succesfully');
           resolve();
         }).catch(function(error) {
           logger.error('[TransactionDAO] An error has ocurred while updating transaction informations', error);

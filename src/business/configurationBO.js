@@ -1,6 +1,6 @@
 var Promise         = require('promise');
 var logger          = require('../config/logger');
-var settings          = require('../config/settings');
+var settings        = require('../config/settings');
 
 module.exports = function(dependencies) {
   var configurationDAO = dependencies.configurationDAO;

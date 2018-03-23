@@ -1,74 +1,32 @@
 var settings            = require('./config/settings');
-var ConfigurationBO     = require('./business/configurationBO');
-var DAOFactory          = require('./daos/daoFactory');
-var ModelParser         = require('./models/modelParser');
+var WorkerFactory       = require('./workers/workerFactory');
+var BOFactory           = require('./business/boFactory');
 var logger              = require('./config/logger');
-var BOSWorker           = require('./workers/bosWorker');
-var AAPMSWorker         = require('./workers/aapmsWorker');
-var TransactionBO       = require('./business/transactionBO');
-var AddressBO           = require('./business/addressBO');
-var ConfigurationBO     = require('./business/configurationBO');
-var DAOFactory          = require('./daos/daoFactory');
-var ModelParser         = require('./models/modelParser');
-var DaemonHelper        = require('./helpers/daemonHelper');
-var RequestHelper       = require('./helpers/requestHelper');
 
 module.exports = function() {
   return {
     runWorkers: function() {
-      var addressBO = new AddressBO({
-        addressDAO: DAOFactory.getDAO('address'),
-        modelParser: new ModelParser(),
-        daemonHelper: new DaemonHelper({
-          requestHelper: new RequestHelper({
-            request: require('request')
+      return new Promise(function(resolve, reject) {
+        var chain = Promise.resolve();
+        var bosWorker = WorkerFactory.getWorker('bos');
+        var aapmsWorker = WorkerFactory.getWorker('aapms');
+
+        chain
+          .then(function() {
+            return aapmsWorker.run();
           })
-        })
-      });
-
-      var configurationBO = new ConfigurationBO({
-        configurationDAO: DAOFactory.getDAO('configuration'),
-        modelParser: new ModelParser()
-      });
-
-      var transactionBO = new TransactionBO({
-        addressBO: addressBO,
-        transactionDAO: DAOFactory.getDAO('transaction'),
-        modelParser: new ModelParser(),
-        daemonHelper: new DaemonHelper({
-          requestHelper: new RequestHelper({
-            request: require('request')
+          .then(function() {
+            bosWorker.run();
           })
-        })
+          .then(resolve)
+          .catch(reject);
       });
-
-      var bosWorker = new BOSWorker({
-        addressBO: addressBO,
-        transactionBO: transactionBO,
-        configurationBO: configurationBO,
-        daemonHelper: new DaemonHelper({
-          requestHelper: new RequestHelper({
-            request: require('request')
-          })
-        })
-      }, true);
-
-      var aapmsWorker = new AAPMSWorker({
-        addressBO: addressBO,
-        configurationBO: configurationBO
-      });
-
-      bosWorker.run();
-      aapmsWorker.run();
     },
 
     configureDefaultSettings: function() {
       logger.info('Creating default configurations to the system...');
 
-      var configurationBO = new ConfigurationBO({
-        configurationDAO: DAOFactory.getDAO('configuration'),
-        modelParser: new ModelParser()
-      });
+      var configurationBO = BOFactory.getBO('configuration');
 
       var p = [];
 
@@ -88,7 +46,7 @@ module.exports = function() {
       var self = this;
       this.configureDefaultSettings()
         .then(function() {
-          self.runWorkers();
+          return self.runWorkers();
         });
     }
   };

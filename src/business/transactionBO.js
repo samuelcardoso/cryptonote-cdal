@@ -49,6 +49,34 @@ module.exports = function(dependencies) {
       });
     },
 
+    getBlockchainTransactionByTransaction: function(filter) {
+      var self = this;
+      return new Promise(function(resolve, reject) {
+        var chain = Promise.resolve();
+
+        chain
+          .then(function() {
+            return self.getAll(filter);
+          })
+          .then(function(r) {
+            if (r.length === 1) {
+              return blockchainTransactionDAO.getByTransactionHash(r[0].transactionHash);
+            } else {
+              return null;
+            }
+          })
+          .then(function(r) {
+            if (r) {
+              return modelParser.clear(r);
+            } else {
+              return null;
+            }
+          })
+          .then(resolve)
+          .catch(reject);
+      });
+    },
+
     getByTransactionHash: function(transactionHash) {
       return new Promise(function(resolve, reject) {
         var filter = {
@@ -231,12 +259,11 @@ module.exports = function(dependencies) {
 
         chain
           .then(function() {
-            var o = modelParser.prepare(transaction);
-            o.blockIndex = blockchainTransaction.blockIndex;
-            o.timestamp = blockchainTransaction.timestamp;
-            o.updatedAt = dateHelper.getNow();
+            transaction.blockIndex = blockchainTransaction.blockIndex;
+            transaction.timestamp = blockchainTransaction.timestamp;
+            transaction.updatedAt = dateHelper.getNow();
 
-            return blockchainTransactionDAO.update(o);
+            return blockchainTransactionDAO.update(transaction);
           })
           .then(function(r) {
             rBlockchainTransaction = r;
@@ -280,6 +307,7 @@ module.exports = function(dependencies) {
 
             var o = modelParser.prepare(blockchainTransaction, true);
             o.createdAt = dateHelper.getNow();
+            o.isConfirmed = false;
 
             logger.info('[TransactionBO] Saving the blockchain transaction', JSON.stringify(o));
 
@@ -313,7 +341,7 @@ module.exports = function(dependencies) {
 
             logger.info('[TransactionBO] Trying to find the address at database to get the ownerId');
             for (var address in addressesAmount) {
-              p.push(addressBO.getByAddress(address));
+              p.push(addressBO.getByAddress(null, address));
             }
 
             logger.debug('[TransactionBO] Returning promises', p.length);
@@ -324,8 +352,9 @@ module.exports = function(dependencies) {
 
             for (var i = 0; i < r.length; i++) {
               if (r[i]) {
-                logger.info('[TransactionBO] The owner for the address was found', JSON.stringify(r[i]));
+                logger.info('[TransactionBO] The address was fount at database', JSON.stringify(r[i]));
                 addressesAmount[r[i].address].ownerId = r[i].ownerId;
+                addressesAmount[r[i].address].found = true;
               } else {
                 logger.info('[TransactionBO] There is no address at the database for the specified address at transfer index ', i);
               }
@@ -338,7 +367,7 @@ module.exports = function(dependencies) {
             var p = [];
 
             for (var address in addressesAmount) {
-              if (addressesAmount[address].ownerId) {
+              if (addressesAmount[address].found) {
                 logger.info('[TransactionBO] Saving the transaction', JSON.stringify(addressesAmount[address]));
                 p.push(transactionDAO.save({
                   ownerId: addressesAmount[address].ownerId,
@@ -346,6 +375,7 @@ module.exports = function(dependencies) {
                   amount: addressesAmount[address].amount,
                   isConfirmed: false,
                   isNotified: false,
+                  timestamp: blockchainTransaction.timestamp,
                   blockIndex: blockchainTransaction.blockIndex,
                   transactionHash: blockchainTransaction.transactionHash,
                   address: addressesAmount[address].address,
@@ -404,7 +434,10 @@ module.exports = function(dependencies) {
     },
 
     updateIsConfirmedFlag: function(confirmedBlockIndex) {
-      return transactionDAO.updateIsConfirmedFlag(confirmedBlockIndex);
+      return Promise.all([
+        transactionDAO.updateIsConfirmedFlag(confirmedBlockIndex),
+        blockchainTransactionDAO.updateIsConfirmedFlag(confirmedBlockIndex)
+      ]);
     }
   };
 };

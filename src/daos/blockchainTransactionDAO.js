@@ -61,6 +61,27 @@ module.exports = function() {
       });
     },
 
+    getByTransactionHash: function(transactionHash) {
+      var self = this;
+      return new Promise(function(resolve, reject) {
+        logger.info('[BlockchainTransactionDAO] Getting a blockchain transaction by transactionHash %s', transactionHash);
+
+        self.getAll({transactionHash: transactionHash})
+        .then(function(items) {
+          if (items.length === 0) {
+            resolve(null);
+            logger.info('[BlockchainTransactionDAO] The blockchain transaction not found');
+          } else {
+            resolve(items[0]);
+            logger.info('[BlockchainTransactionDAO] The blockchain transaction was found');
+          }
+        }).catch(function(erro) {
+            logger.error('[BlockchainTransactionDAO] An error has occurred while getting a blockchain transaction by transactionHash %s', transactionHash, erro);
+            reject(erro);
+        });
+      });
+    },
+
     save: function(entity) {
       var self = this;
       return new Promise(function(resolve, reject) {
