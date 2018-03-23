@@ -215,10 +215,6 @@ module.exports = function(dependencies) {
             logger.info('[TransactionBO] Getting transaction information by transactionHash', transactionRequest.transactionHash);
             return daemonHelper.getTransaction(transactionRequest.transactionHash);
           })
-          .then(function(r) {
-            logger.info('[TransactionBO] Storing the transaction at database', JSON.stringify(r.result.transaction));
-            return blockchainTransactionDAO.save(r.result.transaction);
-          })
           .then(function() {
             logger.info('[TransactionBO] Updating the addresses balances involved at this transaction', JSON.stringify(transactionRequest.addresses));
             return self.updateTransactionRequestAddressesBalances(transactionRequest);
@@ -390,6 +386,7 @@ module.exports = function(dependencies) {
             return Promise.all(p);
           })
           .then(function() {
+            console.log(rBlockchainTransaction);
             return modelParser.clear(rBlockchainTransaction);
           })
           .then(resolve)

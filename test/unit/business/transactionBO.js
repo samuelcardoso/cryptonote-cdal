@@ -183,20 +183,6 @@ describe('Business > TransactionBO > ', function() {
           }
         }));
 
-      var blockchainTransactionSaveStub = sinon.stub(blockchainTransactionDAO, 'save');
-      blockchainTransactionSaveStub
-        .withArgs({
-          blockIndex: 1,
-          timestamp: 2,
-          amount: 3
-        })
-        .returns(Promise.resolve({
-          _id: 'ID',
-          blockIndex: 1,
-          timestamp: 2,
-          amount: 3
-        }));
-
       var getAllStub = sinon.stub(addressBO, 'getAll');
       getAllStub
         .withArgs({address: 'ADDRESS1'})
@@ -262,7 +248,6 @@ describe('Business > TransactionBO > ', function() {
           });
           expect(transactionRequestSaveStub.callCount).to.be.equal(1);
           expect(transactionRequestUpdateStub.callCount).to.be.equal(1);
-          expect(blockchainTransactionSaveStub.callCount).to.be.equal(1);
           expect(sendTransactionStub.callCount).to.be.equal(1);
           expect(getTransactionStub.callCount).to.be.equal(1);
           expect(getAllStub.callCount).to.be.equal(2);
@@ -271,7 +256,6 @@ describe('Business > TransactionBO > ', function() {
 
           transactionRequestSaveStub.restore();
           transactionRequestUpdateStub.restore();
-          blockchainTransactionSaveStub.restore();
           sendTransactionStub.restore();
           getTransactionStub.restore();
           getAllStub.restore();
@@ -311,6 +295,7 @@ describe('Business > TransactionBO > ', function() {
           timestamp: 2,
           createdAt: now,
           isEnabled: true,
+          isConfirmed: false,
           transfers:[{
             address: 'ADDRESS1',
             amount: 100000000,

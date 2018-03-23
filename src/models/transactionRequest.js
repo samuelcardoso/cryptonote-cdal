@@ -25,17 +25,13 @@ module.exports = function(){
       type: Number,
       required: true
     },
-    amount: {
-      type: Number,
-      required: true
-    },
     fee: {
       type: Number,
-      required: true
+      required: false
     },
     transactionHash: {
       type: String,
-      required: true
+      required: false
     },
     paymentId: {
       type: String,

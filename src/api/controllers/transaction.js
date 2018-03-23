@@ -96,6 +96,13 @@ module.exports = function() {
       business.getBlockchainTransactionByTransaction(filter)
         .then(rh.ok)
         .catch(rh.error);
-    }
+    },
+
+    getBlockchainTransaction: function(req, res) {
+      var rh = new HTTPResponseHelper(req, res);
+      business.getBlockchainTransactionByTransactionHash(req.params.transactionHash)
+        .then(rh.ok)
+        .catch(rh.error);
+    },
   };
 };

@@ -7,6 +7,9 @@ module.exports = function(app) {
   app.route('/v1/transactions/:id')
     .get(controller.getAll);
 
+  app.route('/v1/blockchain-transactions/:transactionHash')
+    .get(controller.getBlockchainTransaction);
+
   app.route('/v1/:ownerId/transactions')
     .get(controller.getAll)
     .post(controller.save);
