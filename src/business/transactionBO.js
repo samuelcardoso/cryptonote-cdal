@@ -49,6 +49,34 @@ module.exports = function(dependencies) {
       });
     },
 
+    getTransactionsToNotify: function() {
+      var self = this;
+
+      return new Promise(function(resolve, reject) {
+        var filter = {
+          '$or': [
+            {
+              'notifications.creation.isNotified': false
+            },
+            {
+              isConfirmed: true,
+              'notifications.confirmation.isNotified': false
+            }
+          ]
+
+        };
+        var chain = Promise.resolve();
+
+        chain
+          .then(function() {
+            logger.info('[TransactionBO] Listing all transactions to be notified', JSON.stringify(filter));
+            return self.getAll(filter);
+          })
+          .then(resolve)
+          .catch(reject);
+      });
+    },
+
     getBlockchainTransactionByTransaction: function(filter) {
       var self = this;
       return new Promise(function(resolve, reject) {
@@ -370,11 +398,19 @@ module.exports = function(dependencies) {
                   ownerTransactionId: transactionRequest ? transactionRequest.ownerTransactionId : null,
                   amount: addressesAmount[address].amount,
                   isConfirmed: false,
-                  isNotified: false,
+                  notifications: {
+                    creation: {
+                      isNotified: false
+                    },
+                    confirmation: {
+                      isNotified: false
+                    },
+                  },
                   timestamp: blockchainTransaction.timestamp,
                   blockIndex: blockchainTransaction.blockIndex,
                   transactionHash: blockchainTransaction.transactionHash,
                   address: addressesAmount[address].address,
+                  paymentId: blockchainTransaction.paymentId,
                   createdAt: dateHelper.getNow()
                 }));
               } else {
@@ -435,6 +471,14 @@ module.exports = function(dependencies) {
         transactionDAO.updateIsConfirmedFlag(confirmedBlockIndex),
         blockchainTransactionDAO.updateIsConfirmedFlag(confirmedBlockIndex)
       ]);
+    },
+
+    updateIsCreationNotifiedFlag: function(transactionId) {
+      return transactionDAO.updateIsCreationNotifiedFlag(transactionId);
+    },
+
+    updateIsConfirmationNotifiedFlag: function(transactionId) {
+      return transactionDAO.updateIsConfirmationNotifiedFlag(transactionId);
     }
   };
 };

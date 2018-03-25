@@ -10,12 +10,14 @@ module.exports = function() {
         var chain = Promise.resolve();
         var bosWorker = WorkerFactory.getWorker('bos');
         var aapmsWorker = WorkerFactory.getWorker('aapms');
+        var tnsWorker = WorkerFactory.getWorker('tns');
 
         chain
           .then(function() {
             return aapmsWorker.run();
           })
           .then(function() {
+            tnsWorker.run();
             bosWorker.run();
           })
           .then(resolve)

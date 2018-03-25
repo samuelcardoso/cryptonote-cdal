@@ -104,7 +104,11 @@ module.exports = function() {
       return new Promise(function(resolve, reject) {
         logger.log('info', '[TransactionDAO] Updating isConfirmedFlag from transactions ', confirmedBlockIndex);
 
-        model.updateMany({blockIndex: {$lte: confirmedBlockIndex}}, $.flatten({isConfirmed: true}, {multi: true}))
+        model.updateMany({blockIndex: {$lte: confirmedBlockIndex}},
+          $.flatten({
+            isConfirmed: true,
+            updatedAt: new Date()
+          }, {multi: true}))
         .then(function() {
           logger.log('info', '[TransactionDAO] The transactions has been updated succesfully');
           resolve();
@@ -125,13 +129,58 @@ module.exports = function() {
         model.updateMany({transactionHash: transactionHash},
           $.flatten({
             blockIndex: blockIndex,
-            timestamp: timestamp
+            timestamp: timestamp,
+            updatedAt: new Date()
           }, {multi: true}))
         .then(function() {
           logger.info('[TransactionDAO] The transactions has been updated succesfully');
           resolve();
         }).catch(function(error) {
           logger.error('[TransactionDAO] An error has ocurred while updating transaction informations', error);
+          reject({
+            status: 422,
+            message: error
+          });
+        });
+      });
+    },
+
+    updateIsCreationNotifiedFlag: function(transactionId) {
+      return new Promise(function(resolve, reject) {
+        logger.log('info', '[TransactionDAO] Updating notifications.creation.isNotified from transaction ', transactionId);
+
+        model.update({_id: transactionId}, $.flatten({
+          'notifications.creation.isNotified': true,
+          'notifications.creation.notifiedAt': new Date(),
+          updatedAt: new Date()
+        }))
+        .then(function() {
+          logger.log('info', '[TransactionDAO] The notified flag notifications.creation.isNotified has been updated succesfully');
+          resolve();
+        }).catch(function(error) {
+          logger.error('[TransactionDAO] An error has ocurred while updating notifications.creation.isNotified flag', error);
+          reject({
+            status: 422,
+            message: error
+          });
+        });
+      });
+    },
+
+    updateIsConfirmationNotifiedFlag: function(transactionId) {
+      return new Promise(function(resolve, reject) {
+        logger.log('info', '[TransactionDAO] Updating notifications.confirmation.isNotified from transaction ', transactionId);
+
+        model.update({_id: transactionId}, $.flatten({
+          'notifications.confirmation.isNotified': true,
+          'notifications.confirmation.notifiedAt': new Date(),
+          updatedAt: new Date()
+        }))
+        .then(function() {
+          logger.log('info', '[TransactionDAO] The notified flag notifications.confirmation.isNotified has been updated succesfully');
+          resolve();
+        }).catch(function(error) {
+          logger.error('[TransactionDAO] An error has ocurred while updating notifications.confirmation.isNotified flag', error);
           reject({
             status: 422,
             message: error

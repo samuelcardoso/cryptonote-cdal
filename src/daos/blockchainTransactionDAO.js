@@ -125,7 +125,11 @@ module.exports = function() {
       return new Promise(function(resolve, reject) {
         logger.log('info', '[BlockchainTransactionDAO] Updating isConfirmedFlag from blockchain transactions ', confirmedBlockIndex);
 
-        model.updateMany({blockIndex: {$lte: confirmedBlockIndex}}, $.flatten({isConfirmed: true}, {multi: true}))
+        model.updateMany({blockIndex: {$lte: confirmedBlockIndex}},
+          $.flatten({
+            isConfirmed: true,
+            updatedAt: new Date()
+          }, {multi: true}))
         .then(function() {
           logger.log('info', '[BlockchainTransactionDAO] The blockchain transactions has been updated succesfully');
           resolve();

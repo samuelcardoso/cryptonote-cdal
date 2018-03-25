@@ -1,5 +1,6 @@
 var BOFactory           = require('../business/boFactory');
 var BOSWorker           = require('./bosWorker');
+var TNSWorker           = require('./tnsWorker');
 var AAPMSWorker         = require('./aapmsWorker');
 var BOSWorker           = require('./bosWorker');
 var DateHelper          = require('../helpers/dateHelper');
@@ -19,7 +20,16 @@ module.exports = {
               request: require('request')
             })
           })
-        });;
+        });
+      case 'tns':
+        return new TNSWorker({
+          dateHelper: new DateHelper(),
+          addressBO: BOFactory.getBO('address'),
+          transactionBO: BOFactory.getBO('transaction'),
+          requestHelper: new RequestHelper({
+            request: require('request')
+          })
+        });
       case 'bos':
         return new BOSWorker({
           dateHelper: new DateHelper(),

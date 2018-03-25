@@ -21,9 +21,27 @@ module.exports = function(){
       type: Boolean,
       required: true
     },
-    isNotified: {
-      type: Boolean,
-      required: true
+    notifications: {
+      creation: {
+        isNotified: {
+          type: Boolean,
+          required: true
+        },
+        notifiedAt: {
+          type: Date,
+          required: false
+        },
+      },
+      confirmation: {
+        isNotified: {
+          type: Boolean,
+          required: true
+        },
+        notifiedAt: {
+          type: Date,
+          required: false
+        },
+      }
     },
     blockIndex: {
       type: Number,
@@ -32,6 +50,10 @@ module.exports = function(){
     transactionHash: {
       type: String,
       required: true
+    },
+    paymentId: {
+      type: String,
+      required: false
     },
     address: {
       type: String,

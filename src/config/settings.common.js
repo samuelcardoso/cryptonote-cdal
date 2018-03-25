@@ -25,5 +25,9 @@ module.exports = {
     daemon: {
       //endpoint: 'http://nbrdaemon:19264/json_rpc'
       endpoint: 'http://bcndaemon:19264/json_rpc'
+    },
+
+    transactionNotificationAPI : {
+      endpoint: 'http://localhost:3001/v1/transactions/notifications'
     }
   };
