@@ -15,6 +15,6 @@ before_install:
 deploy:
   provider: script
   skip_cleanup: true
-  script: rsync -r --delete-after --quiet $TRAVIS_BUILD_DIR/src/* ubuntu@18.220.131.221:~/app/cdal
+  script: rsync -r --delete-after --quiet $TRAVIS_BUILD_DIR ubuntu@18.220.131.221:~/app/cdal && cd ~/app/cdal && docker-compose down && docker-compose up -d
   on:
     branch: master
