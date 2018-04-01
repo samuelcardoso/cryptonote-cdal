@@ -1,9 +1,6 @@
-FROM alpine
+FROM node:9.2.0
 
-RUN apk update && \
-    apk add nodejs && \
-    apk add nodejs-npm && \
-    mkdir /app && \
+RUN mkdir /app
 
 WORKDIR /app
 
