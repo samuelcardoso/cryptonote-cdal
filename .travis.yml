@@ -15,7 +15,7 @@ before_install:
 deploy:
   provider: script
   skip_cleanup: true
-  script: cd $TRAVIS_BUILD_DIR && rsync -r --delete-after --quiet ./* ubuntu@18.220.131.221:~/app/cdal
+  script: rsync -r --delete-after --quiet $TRAVIS_BUILD_DIR/** ubuntu@18.220.131.221:~/app/cdal
   on:
     branch: master
   provider: script
