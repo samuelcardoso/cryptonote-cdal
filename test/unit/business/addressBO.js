@@ -147,10 +147,13 @@ describe('Business > AddressBO > ', function() {
     });
 
     it('createAddress with no free address at database', function() {
-      var getFreeAddressStub = sinon.stub(addressDAO, 'getFreeAddress');
-      getFreeAddressStub
-        .withArgs()
-        .returns(Promise.resolve(null));
+      var getAll = sinon.stub(addressDAO, 'getAll');
+      getAll
+        .withArgs({
+          isEnabled: true,
+          ownerId: null
+        }, {}, '+createdAt')
+        .returns(Promise.resolve([]));
 
       var createAddressStub = sinon.stub(daemonHelper, 'createAddress');
       createAddressStub
@@ -263,6 +266,7 @@ describe('Business > AddressBO > ', function() {
           expect(saveStub.callCount).to.be.equal(1);
           expect(updateStub.callCount).to.be.equal(1);
 
+          getAll.restore();
           createAddressStub.restore();
           getSpendKeysStub.restore();
           getNowStub.restore();
