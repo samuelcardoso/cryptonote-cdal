@@ -26,7 +26,8 @@ function factory(dao) {
         daemonHelper: new DaemonHelper({
           requestHelper: new RequestHelper({
             request: require('request')
-          })
+          }),
+          configurationBO: factory('configuration')
         }),
         dateHelper: new DateHelper()
       });
@@ -38,7 +39,8 @@ function factory(dao) {
         daemonHelper: new DaemonHelper({
           requestHelper: new RequestHelper({
             request: require('request')
-          })
+          }),
+          configurationBO: factory('configuration')
         })
       });
     default:

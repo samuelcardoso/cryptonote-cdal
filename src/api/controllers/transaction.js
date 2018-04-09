@@ -32,13 +32,13 @@ module.exports = function() {
         filter.address = req.params.address;
       }
 
-      if (req.params.id) {
-        filter._id = req.params.id;
+      if (req.params.transactionHash) {
+        filter.transactionHash = req.params.transactionHash;
       }
 
       business.getAll(filter)
         .then(function(r) {
-          if (req.params.id) {
+          if (req.params.transactionHash) {
             if (r.length > 0) {
               rh.ok(r[0]);
             } else {
@@ -91,8 +91,8 @@ module.exports = function() {
         filter.address = req.params.address;
       }
 
-      if (req.params.id) {
-        filter._id = req.params.id;
+      if (req.params.transactionHash) {
+        filter.transactionHash = req.params.transactionHash;
       }
 
       business.getBlockchainTransactionByTransaction(filter)

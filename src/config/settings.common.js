@@ -15,17 +15,9 @@ module.exports = {
       minimumConfirmations: 3,
       minimumAddressPoolSize: 100,
       transactionNotificationAPI: 'http://localhost/transactions-notifications',
+      daemonEndpoint: 'http://bcndaemon:19264/json_rpc',
       currentBlockIndex: 0,
       defaultTransactionsBlockCount: 5000,
       minimumFee: 1000
-    },
-
-    daemon: {
-      //endpoint: 'http://nbrdaemon:19264/json_rpc'
-      endpoint: 'http://bcndaemon:19264/json_rpc'
-    },
-
-    transactionNotificationAPI : {
-      endpoint: 'http://localhost:3001/v1/transactions/notifications'
     }
   };

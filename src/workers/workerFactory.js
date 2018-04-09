@@ -18,7 +18,8 @@ module.exports = {
           daemonHelper: new DaemonHelper({
             requestHelper: new RequestHelper({
               request: require('request')
-            })
+            }),
+            configurationBO: BOFactory.getBO('configuration')
           })
         });
       case 'tns':
@@ -39,7 +40,8 @@ module.exports = {
           daemonHelper: new DaemonHelper({
             requestHelper: new RequestHelper({
               request: require('request')
-            })
+            }),
+            configurationBO: BOFactory.getBO('configuration')
           })
         });
       default:

@@ -19,7 +19,8 @@ describe('integration > base operations', function(){
   var daemonHelper = new DaemonHelper({
     requestHelper: new RequestHelper({
       request: require('request')
-    })
+    }),
+    configurationBO: BOFactory.getBO('configuration')
   });
   var server;
 
@@ -55,9 +56,9 @@ describe('integration > base operations', function(){
       });
   });
 
-  after(function(){
+  /*after(function(){
     return clearDatabase();
-  });
+  });*/
 
   it('01 - should sinchronize existing addresses from daemon and maintain the pool', function() {
     this.timeout(5000);
@@ -165,6 +166,7 @@ describe('integration > base operations', function(){
       this.timeout(20000);
       var address = null;
       var secondAddress = null;
+      var transactionHash = null;
 
       return request(server)
         .get('/v1/ownerId/addresses')
@@ -208,6 +210,8 @@ describe('integration > base operations', function(){
               .expect(201);
         })
         .then(function(res) {
+          transactionHash = res.body.transactionHash;
+
           expect(res.body.blockIndex).to.not.be.null;
           expect(res.body.timestamp).to.not.be.null;
           expect(res.body.transactionHash).to.not.be.null;
@@ -236,6 +240,23 @@ describe('integration > base operations', function(){
         })
         .then(function(res) {
           expect(res.body.balance.locked).to.be.equal(secondAddress.balance.locked + settings.defaultSettings.minimumFee);
+          return request(server)
+            .get('/v1/addresses/' + address.address + '/transactions/' + transactionHash)
+            .set('Accept', 'application/json')
+            .expect('Content-Type', /json/)
+            .expect(200);
+        })
+        .then(function(res) {
+          expect(res.body.transactionHash).to.be.equal(transactionHash);
+
+          return request(server)
+            .get('/v1/addresses/' + address.address + '/transactions/' + transactionHash + '/blockchain-transaction')
+            .set('Accept', 'application/json')
+            .expect('Content-Type', /json/)
+            .expect(200);
+        })
+        .then(function(res) {
+          expect(res.body.transactionHash).to.be.equal(transactionHash);
         });
     });
 
@@ -438,7 +459,7 @@ describe('integration > base operations', function(){
         });
     });
 
-    it('03 - should remove all addresses but the first', function() {
+    it('09 - should remove all addresses but the first', function() {
       this.timeout(20000);
 
       var chain = Promise.resolve();

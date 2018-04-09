@@ -7,11 +7,9 @@ module.exports = {
       minimumConfirmations: 3,
       minimumAddressPoolSize: 10,
       transactionNotificationAPI: 'http://localhost/transactions-notifications',
+      daemonEndpoint: 'http://nbrw-dev.kernelits.net:20264/json_rpc',
       currentBlockIndex: 0,
-      defaultTransactionsBlockCount: 5000
-    },
-
-    daemon: {
-      endpoint: 'http://nbrw-dev.kernelits.net:20264/json_rpc'
-    },
+      defaultTransactionsBlockCount: 5000,
+      minimumFee: 1000
+    }
 };

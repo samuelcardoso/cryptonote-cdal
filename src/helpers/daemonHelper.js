@@ -1,16 +1,15 @@
 var logger        = require('../config/logger');
-var settings      = require('../config/settings');
 
 module.exports = function(dependencies) {
   var requestHelper = dependencies.requestHelper;
+  var configurationBO = dependencies.configurationBO;
 
   return {
-    daemonEndpoint: settings.daemon.endpoint,
-
     _main: function(method, params) {
       var self = this;
       return new Promise(function(resolve, reject) {
         var chain = Promise.resolve();
+        var daemonEndpoint = null;
 
         var body = {
           params: params,
@@ -21,8 +20,13 @@ module.exports = function(dependencies) {
 
         chain
           .then(function() {
-            logger.info('[DaemonHelper] Executing the method ' + method + ' at ' + self.daemonEndpoint, JSON.stringify(body));
-            return requestHelper.postJSON(self.daemonEndpoint, [], body, []);
+            return configurationBO.getByKey('daemonEndpoint');
+          })
+          .then(function(r) {
+            daemonEndpoint = r.value;
+
+            logger.info('[DaemonHelper] Executing the method ' + method + ' at ' + daemonEndpoint, JSON.stringify(body));
+            return requestHelper.postJSON(daemonEndpoint, [], body, []);
           })
           .then(function(r) {
             logger.info('[DaemonHelper] Parsing the daemon return', JSON.stringify(r));

@@ -6,11 +6,19 @@ var expect            = chai.expect;
 
 describe('business > DaemonHelper', function() {
   var requestHelper = new RequestHelper();
+  var configurationBO = {
+    getByKey: function(key) {
+      return Promise.resolve({
+        key: key,
+        value: 'http://localhost:8000/json_rpc'
+      });
+    }
+  };
 
   var daemonHelper = new DaemonHelper({
-    requestHelper: requestHelper
+    requestHelper: requestHelper,
+    configurationBO: configurationBO
   });
-  daemonHelper.daemonEndpoint = 'http://localhost:8000/json_rpc';
 
   var commonRPCMessage = {
     params: undefined,
