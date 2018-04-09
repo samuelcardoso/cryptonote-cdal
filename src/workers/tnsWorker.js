@@ -2,18 +2,34 @@ var Promise         = require('promise');
 var logger          = require('../config/logger');
 var settings        = require('../config/settings');
 
-module.exports = function(dependencies, autoRun) {
+module.exports = function(dependencies) {
   var transactionBO = dependencies.transactionBO;
   var addressBO = dependencies.addressBO;
   var requestHelper = dependencies.requestHelper;
 
   return {
     dependencies: dependencies,
-    autoRun: autoRun,
+    isRunning: false,
     transactionNotificationAPI: settings.transactionNotificationAPI,
 
     run: function() {
-      return this.notifyConfirmedTransactions();
+      var self = this;
+
+      if (!this.isRunning) {
+        this.isRunning = true;
+
+        return this.notifyConfirmedTransactions()
+          .then(function() {
+              this.isRunning = false;
+
+              logger.info('[TNSWorker] A new verification will occurr in 10s');
+              setTimeout(function() {
+                self.run();
+              }, 10 * 1000);
+          });
+      } else {
+        logger.info('[TNSWorker] The process still running... this execution will be skiped');
+      }
     },
 
     notifyConfirmedTransactions: function() {
@@ -88,20 +104,10 @@ module.exports = function(dependencies, autoRun) {
           })
           .then(function() {
             logger.info('[TNSWorker] A new verification will occurr in 10s');
-            setTimeout(function() {
-              self.notifyConfirmedTransactions();
-            }, 10 * 1000);
-
             resolve(true);
           })
           .catch(function(r) {
             logger.error('[TNSWorker] An error has occurred while notifying unnotified transactions', JSON.stringify(r));
-
-            logger.info('[TNSWorker] A new verification will occurr in 10s');
-            setTimeout(function() {
-              self.notifyConfirmedTransactions();
-            }, 10 * 1000);
-
             resolve(true);
           });
       });

@@ -8,8 +8,8 @@ var DaemonHelper        = require('../helpers/daemonHelper');
 var RequestHelper       = require('../helpers/requestHelper');
 
 module.exports = {
-  getWorker: function(dao) {
-    switch (dao) {
+  getWorker: function(woker) {
+    switch (woker) {
       case 'aapms':
         return new AAPMSWorker({
           dateHelper: new DateHelper(),
@@ -41,7 +41,7 @@ module.exports = {
               request: require('request')
             })
           })
-        }, true);
+        });
       default:
         return null;
     }

@@ -15,11 +15,9 @@ module.exports = {
       minimumConfirmations: 3,
       minimumAddressPoolSize: 100,
       transactionNotificationAPI: 'http://localhost/transactions-notifications',
-      defaultUnit: 100000000,
-      coinSymbol: 'NBR',
-      coinName: 'Nióbio Cash',
       currentBlockIndex: 0,
-      defaultTransactionsBlockCount: 5000
+      defaultTransactionsBlockCount: 5000,
+      minimumFee: 1000
     },
 
     daemon: {

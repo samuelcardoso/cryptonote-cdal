@@ -36,7 +36,7 @@ module.exports = function(dependencies) {
         filter.isEnabled = true;
 
         logger.info('[AddressBO] Listing all addresses by filter ', JSON.stringify(filter));
-        addressDAO.getAll(filter)
+        addressDAO.getAll(filter, {}, '+createdAt')
           .then(function(r) {
             logger.info('[AddressBO] Total of addresses', r.length);
             return r.map(function(item) {
@@ -53,7 +53,7 @@ module.exports = function(dependencies) {
       return this.getAll({
         isEnabled: true,
         ownerId: null
-      });
+      }, {}, '+createdAt');
     },
 
     createAddressFromDaemon: function(ownerId) {
@@ -124,15 +124,16 @@ module.exports = function(dependencies) {
         return chain
           .then(function() {
             logger.info('[AddressBO] Trying to get a free address from database');
-            return addressDAO.getFreeAddress();
+            return self.getFreeAddresses();
           })
           .then(function(r) {
-            if (!r) {
+            var address = r.length > 0 ? r[0] : null;
+            if (!address) {
               logger.info('[AddressBO] There is no free address at database');
               return self.createAddressFromDaemon(ownerId);
             } else {
-              logger.info('[AddressBO] A free address was found at database', JSON.stringify(r));
-              return modelParser.clear(r);
+              logger.info('[AddressBO] A free address was found at database', JSON.stringify(address));
+              return address;
             }
           })
           .then(function(r) {

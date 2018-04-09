@@ -18,7 +18,7 @@ describe('Workers > BOSWorker', function() {
     transactionBO: transactionBO,
     addressBO: addressBO,
     configurationBO: configurationBO
-  }, false);
+  });
 
   var getByKeyStub = sinon.stub(configurationBO, 'getByKey');
   getByKeyStub
@@ -47,6 +47,17 @@ describe('Workers > BOSWorker', function() {
     .returns(Promise.resolve());
 
   it('should run', function() {
+    var getTransactionsStub = sinon.stub(daemonHelper, 'getTransactions');
+    getTransactionsStub
+      .withArgs(0, 1)
+      .returns(Promise.resolve({
+        id: 'test',
+        jsonrpc: '2.0',
+        result: {
+          items: []
+        }
+      }));
+
     var getUnconfirmedTransactionHashesStub = sinon.stub(daemonHelper, 'getUnconfirmedTransactionHashes');
     getUnconfirmedTransactionHashesStub
       .withArgs()
@@ -91,8 +102,8 @@ describe('Workers > BOSWorker', function() {
         id: 'test',
         jsonrpc: '2.0',
         result:{
-          blockCount: 63667,
-          knownBlockCount: 63667,
+          blockCount: 5000,
+          knownBlockCount: 5000,
           lastBlockHash: 'bf95d3a66d2b23c5bca14aa5274ade97c024f8196285ad4654e5e699d195cde2',
           peerCount:76
         }
@@ -100,7 +111,7 @@ describe('Workers > BOSWorker', function() {
 
       var t1 = {
         amount: 47400000,
-        blockIndex: 63545,
+        blockIndex: 545,
         confirmations: 122,
         extra: '',
         fee: 1000,
@@ -127,7 +138,7 @@ describe('Workers > BOSWorker', function() {
 
       var t2 = {
         amount: 3000000000,
-        blockIndex: 63545,
+        blockIndex: 545,
         confirmations: 122,
         extra: '',
         fee: 10000,
@@ -152,7 +163,6 @@ describe('Workers > BOSWorker', function() {
         unlockTime: 0
       };
 
-    var getTransactionsStub = sinon.stub(daemonHelper, 'getTransactions');
     getTransactionsStub
       .withArgs(0, 10000)
       .returns(Promise.resolve({
@@ -202,7 +212,7 @@ describe('Workers > BOSWorker', function() {
     .withArgs(-3)
     .returns(Promise.resolve());
 
-    return bosWorker.run()
+    return bosWorker.synchronizeToBlockchain()
       .then(function(r) {
         expect(getUnconfirmedTransactionHashesStub.callCount).to.be.equal(1);
         expect(getTransactionStub.callCount).to.be.equal(1);
@@ -220,7 +230,7 @@ describe('Workers > BOSWorker', function() {
       });
   });
 
-  it('should not crach when the daemon (getStatus) returns an error', function() {
+  it('should not crash when the daemon (getStatus) returns an error', function() {
     var getUnconfirmedTransactionHashesStub = sinon.stub(daemonHelper, 'getUnconfirmedTransactionHashes');
     getUnconfirmedTransactionHashesStub
       .withArgs()
@@ -261,7 +271,7 @@ describe('Workers > BOSWorker', function() {
     var getStatusStub = sinon.stub(daemonHelper, 'getStatus');
     getStatusStub
       .withArgs()
-      .returns(Promise.resolve({
+      .returns(Promise.reject({
         error:{
           code: -32601,
           message: 'Method not found'
@@ -270,7 +280,7 @@ describe('Workers > BOSWorker', function() {
         jsonrpc: '2.0'
       }));
 
-    return bosWorker.run()
+    return bosWorker.synchronizeToBlockchain()
       .then(function(r) {
         expect(getUnconfirmedTransactionHashesStub.callCount).to.be.equal(1);
         expect(getTransactionStub.callCount).to.be.equal(1);
@@ -285,7 +295,7 @@ describe('Workers > BOSWorker', function() {
       });
   });
 
-  it('should not crach when the daemon (getTransactions) returns an error', function() {
+  it('should not crash when the daemon (getTransactions) returns an error', function() {
     var getUnconfirmedTransactionHashesStub = sinon.stub(daemonHelper, 'getUnconfirmedTransactionHashes');
     getUnconfirmedTransactionHashesStub
       .withArgs()
@@ -330,8 +340,8 @@ describe('Workers > BOSWorker', function() {
         id: 'test',
         jsonrpc: '2.0',
         result:{
-          blockCount: 63667,
-          knownBlockCount: 63667,
+          blockCount: 5000,
+          knownBlockCount: 5000,
           lastBlockHash: 'bf95d3a66d2b23c5bca14aa5274ade97c024f8196285ad4654e5e699d195cde2',
           peerCount:76
         }
@@ -340,7 +350,7 @@ describe('Workers > BOSWorker', function() {
     var getTransactionsStub = sinon.stub(daemonHelper, 'getTransactions');
     getTransactionsStub
       .withArgs(0, 10000)
-      .returns(Promise.resolve({
+      .returns(Promise.reject({
         error:{
           code: -32601,
           message: 'Method not found'
@@ -349,11 +359,11 @@ describe('Workers > BOSWorker', function() {
         jsonrpc: '2.0'
       }));
 
-    return bosWorker.run()
+    return bosWorker.synchronizeToBlockchain()
       .then(function(r) {
         expect(getUnconfirmedTransactionHashesStub.callCount).to.be.equal(1);
         expect(getStatusStub.callCount).to.be.equal(1);
-        expect(getTransactionsStub.callCount).to.be.equal(1);
+        expect(getTransactionsStub.callCount).to.be.equal(2);
         expect(r).to.be.true;
 
         getUnconfirmedTransactionHashesStub.restore();
@@ -362,7 +372,7 @@ describe('Workers > BOSWorker', function() {
       });
   });
 
-  it('should not crach when the daemon (getUnconfirmedTransactionHashes) returns an error', function() {
+  it('should not crash when the daemon (getUnconfirmedTransactionHashes) returns an error', function() {
     var getUnconfirmedTransactionHashesStub = sinon.stub(daemonHelper, 'getUnconfirmedTransactionHashes');
     getUnconfirmedTransactionHashesStub
       .withArgs()
@@ -371,7 +381,7 @@ describe('Workers > BOSWorker', function() {
         }
       }));
 
-    return bosWorker.run()
+    return bosWorker.synchronizeToBlockchain()
       .then(function(r) {
         expect(getUnconfirmedTransactionHashesStub.callCount).to.be.equal(1);
         expect(r).to.be.true;

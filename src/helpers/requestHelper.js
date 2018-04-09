@@ -62,7 +62,7 @@ module.exports = function(dependencies) {
             logger.info('HTTP Status ', response.statusCode);
 
             if (status.length === 0 || status.indexOf(response.statusCode) > -1) {
-              logger.info('[RequestHelper] Post has been performed successfully ', url, headers, data, body);
+              logger.info('[RequestHelper] Post has been performed successfully ', url, headers, JSON.stringify(data), JSON.stringify(body));
               resolve(body);
             } else {
               logger.error('[RequestHelper] The HTTP status is not accepted as success');

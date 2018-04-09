@@ -15,7 +15,7 @@ describe('Workers > AAPMSWorker > ', function() {
     daemonHelper: daemonHelper,
     addressBO: addressBO,
     configurationBO: configurationBO
-  }, false);
+  });
 
   var getByKeyStub = sinon.stub(configurationBO, 'getByKey');
   getByKeyStub

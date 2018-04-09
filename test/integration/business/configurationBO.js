@@ -1,15 +1,10 @@
-var ConfigurationBO       = require('../../../src/business/configurationBO');
-var DAOFactory            = require('../../../src/daos/daoFactory');
-var ModelParser           = require('../../../src/models/modelParser');
+var BOFactory             = require('../../../src/business/boFactory');
 var chai                  = require('chai');
 var expect                = chai.expect;
                             require('../../../src/config/database.js')();
 
 describe('api', function(){
-  var bo = new ConfigurationBO({
-    configurationDAO: DAOFactory.getDAO('configuration'),
-    modelParser: new ModelParser()
-  });
+  var bo = BOFactory.getBO('configuration');
 
   before(function(){
     return bo.clear();

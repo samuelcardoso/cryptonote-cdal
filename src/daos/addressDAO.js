@@ -13,28 +13,29 @@ module.exports = function() {
       return new Promise(function(resolve, reject) {
         model.remove({}, function(err) {
           if (err) {
-            logger.log('error', 'An error has occurred while deleting all addresses', error);
+            logger.error('[AddressDAO] An error has occurred while deleting all items', error);
             reject(err);
           } else {
-            logger.log('info', 'The addresses have been deleted succesfully');
+            logger.info('[AddressDAO] The items have been deleted succesfully');
             resolve();
           }
         });
       });
     },
 
-    getAll: function(filter) {
+    getAll: function(filter, pagination, sort) {
       return new Promise(function(resolve, reject) {
-        logger.info('Getting addresses from database', filter);
+        logger.info('[AddressDAO] Getting items from database', filter);
 
-        model.find(filter, projectionCommonFields)
+        model.find(filter, projectionCommonFields, pagination)
+          .sort(sort)
           .lean()
           .exec()
           .then(function(items) {
-            logger.info('%d addresses were returned', items.length);
+            logger.info('[AddressDAO] %d items were returned', items.length);
             resolve(items);
           }).catch(function(erro) {
-            logger.log('error', 'An error has ocurred while getting addresses from database', erro);
+            logger.error('[AddressDAO] An error has ocurred while getting items from database', erro);
             reject(erro);
           });
       });

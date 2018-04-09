@@ -1,7 +1,7 @@
 var Promise         = require('promise');
 var logger          = require('../config/logger');
 
-module.exports = function(dependencies, autoRun) {
+module.exports = function(dependencies) {
   var transactionBO = dependencies.transactionBO;
   var configurationBO = dependencies.configurationBO;
   var daemonHelper = dependencies.daemonHelper;
@@ -9,42 +9,47 @@ module.exports = function(dependencies, autoRun) {
 
   return {
     dependencies: dependencies,
-    autoRun: autoRun,
+    isRunning: false,
 
     run: function() {
-      return this.synchronizeToBlockchain();
-    },
+      var self = this;
 
-    _parseTransactionsFromDaemon: function(r) {
-      if (r.error) {
-        logger.error('[BOSWorker] An error has occurred getting transactions. This verification will be skiped',
-          JSON.stringify(r.error));
+      if (!this.isRunning) {
+        this.isRunning = true;
 
-        if (r.error.code === -32000) { //Requested object not found
-          flagObjectNotFound = true;
-        }
+        return this.synchronizeToBlockchain()
+          .then(function() {
+              this.isRunning = false;
 
-        return Promise.resolve(false);
+              logger.info('[BOSWorker] A new verification will occurr in 10s');
+              setTimeout(function() {
+                self.run();
+              }, 10 * 1000);
+          });
       } else {
-        logger.info('[BOSWorker] Total of blockchain transactions', r.result.items.length);
-
-        var p = [];
-        for (var i = 0; i < r.result.items.length; i++) {
-          if (r.result.items[i].transactions.length > 0) {
-            logger.info('[BOSWorker] Parsing the transaction block ', r.result.items[i].blockHash);
-            p.push(this._parseBlockHash(r.result.items[i]));
-          } else {
-            logger.info('[BOSWorker] There is no transactions to be parsed in this blockHash',
-              r.result.items[i].blockHash);
-          }
-        }
-
-        logger.debug('[BOSWorker] Returning promises', p.length);
-        return Promise.all(p);
+        logger.info('[BOSWorker] The process still running... this execution will be skiped');
       }
     },
 
-    _getConfigurations: function() {
+    parseTransactionsFromDaemon: function(r) {
+      logger.info('[BOSWorker] Total of blockchain transactions', r.result.items.length);
+
+      var p = [];
+      for (var i = 0; i < r.result.items.length; i++) {
+        if (r.result.items[i].transactions.length > 0) {
+          logger.info('[BOSWorker] Parsing the transaction block ', r.result.items[i].blockHash);
+          p.push(this.parseBlockHash(r.result.items[i]));
+        } else {
+          logger.info('[BOSWorker] There is no transactions to be parsed in this blockHash',
+            r.result.items[i].blockHash);
+        }
+      }
+
+      logger.debug('[BOSWorker] Returning promises', p.length);
+      return Promise.all(p);
+    },
+
+    getConfigurations: function() {
       var p = [];
 
       logger.debug('[BOSWorker] Getting configurations from database');
@@ -54,7 +59,7 @@ module.exports = function(dependencies, autoRun) {
       return Promise.all(p);
     },
 
-    _parseBlockHash: function(blockHash) {
+    parseBlockHash: function(blockHash) {
       return new Promise(function(resolve, reject) {
         var chain = Promise.resolve();
 
@@ -75,7 +80,7 @@ module.exports = function(dependencies, autoRun) {
       });
     },
 
-    _parseUnconfirmedTransactions: function() {
+    parseUnconfirmedTransactions: function() {
       return new Promise(function(resolve, reject) {
         var chain = Promise.resolve();
 
@@ -125,7 +130,28 @@ module.exports = function(dependencies, autoRun) {
       });
     },
 
-    _confirmTransactions: function(currentBlockIndex) {
+    checkBlockIndex: function(currentBlockIndex) {
+      return new Promise(function(resolve) {
+        var chain = Promise.resolve();
+        chain
+          .then(function() {
+            logger.info('[BOSWorker] Getting status from daemon to verify if the currentBlockIndex is valid',
+            currentBlockIndex);
+            return daemonHelper.getTransactions(currentBlockIndex, 1);
+          })
+          .then(function() {
+            logger.info('[BOSWorker] The currentBlockIndex value is valid', currentBlockIndex);
+            return true;
+          })
+          .then(resolve)
+          .catch(function() {
+            logger.info('[BOSWorker] The currentBlockIndex is not valid yet, so the value will be decremented');
+            resolve(false);
+          });
+      });
+    },
+
+    confirmTransactions: function(currentBlockIndex) {
       var minimumConfirmations = 0;
 
       return new Promise(function(resolve, reject) {
@@ -140,21 +166,6 @@ module.exports = function(dependencies, autoRun) {
             logger.debug('[BOSWorker] minimumConfirmations', r.value);
             minimumConfirmations = r.value;
             return;
-          })
-          .then(function() {
-            logger.info('[BOSWorker] Getting status from daemon to verify if the currentBlockIndex is valid',
-              currentBlockIndex);
-            return daemonHelper.getTransactions(currentBlockIndex, 1);
-          })
-          .then(function(r) {
-            if (r.error) {
-              logger.info('[BOSWorker] The currentBlockIndex is not valid yet, so its value will be decremented',
-                currentBlockIndex - 1);
-              return currentBlockIndex - 1;
-            } else {
-              logger.info('[BOSWorker] The currentBlockIndex value is valid', currentBlockIndex);
-              return currentBlockIndex;
-            }
           })
           .then(function() {
             logger.info('[BOSWorker] Updating all transactions above than the specified blockIndex to confirmed',
@@ -184,14 +195,13 @@ module.exports = function(dependencies, autoRun) {
       var nextBlockIndex = 0;
       var blockCount = 0;
       var flagUpdateBalance = false;
-      var flagObjectNotFound = false;
 
       return new Promise(function(resolve) {
         logger.info('[BOSWorker] Starting Blockchain Observer Service');
 
         return chain
           .then(function() {
-            return self._getConfigurations();
+            return self.getConfigurations();
           })
           .then(function(r) {
             logger.info('[BOSWorker] Configurations has been returned from database');
@@ -203,7 +213,15 @@ module.exports = function(dependencies, autoRun) {
             return r;
           })
           .then(function() {
-            return self._parseUnconfirmedTransactions();
+            logger.info('[BOSWorker] Checking if the current block index is availabe', currentBlockIndex);
+            return self.checkBlockIndex(currentBlockIndex);
+          })
+          .then(function(r) {
+            if (!r) {
+              currentBlockIndex--;
+            }
+
+            return self.parseUnconfirmedTransactions();
           })
           .then(function(r) {
             if (r.length) {
@@ -215,36 +233,21 @@ module.exports = function(dependencies, autoRun) {
             return daemonHelper.getStatus();
           })
           .then(function(r) {
-            if (r.error) {
-              logger.error('[BOSWorker] An error has occurred while trying to get status from daemon',
-                JSON.stringify(r));
+            logger.info('[BOSWorker] Current blockCount', r.result.blockCount);
+            blockCount = r.result.blockCount;
 
-              throw {
-                status: 500,
-                error: r.error,
-                message: 'Daemon is not availabe'
-              };
-            } else {
-              logger.info('[BOSWorker] Current blockCount', r.result.blockCount);
-              blockCount = r.result.blockCount;
-
-              logger.info('[BOSWorker] Getting block chain transactions',
-                currentBlockIndex,
-                defaultTransactionsBlockCount);
-              return daemonHelper.getTransactions(currentBlockIndex, defaultTransactionsBlockCount);
-            }
+            logger.info('[BOSWorker] Getting blockchain transactions',
+              currentBlockIndex,
+              defaultTransactionsBlockCount);
+            return daemonHelper.getTransactions(currentBlockIndex, defaultTransactionsBlockCount);
           })
           .then(function(r) {
-            return self._parseTransactionsFromDaemon(r);
+            return self.parseTransactionsFromDaemon(r);
           })
           .then(function(r) {
-            if (!r) {
-              flagObjectNotFound = true;
-            } else {
-              //if there is items in this array transactions had been processed
-              //so it is necessary update balance
-              flagUpdateBalance = flagUpdateBalance || r.length > 0;
-            }
+            //if there is items in this array transactions had been processed
+            //so it is necessary update balance
+            flagUpdateBalance = flagUpdateBalance || r.length > 0;
 
             nextBlockIndex = currentBlockIndex + defaultTransactionsBlockCount - 1;
 
@@ -274,20 +277,13 @@ module.exports = function(dependencies, autoRun) {
             }
           })
           .then(function() {
-            logger.info('[BOSWorker] Performing confirmating transaction process');
-            return self._confirmTransactions(currentBlockIndex);
+            logger.info('[BOSWorker] Performing transaction confirmation process');
+            return self.confirmTransactions(currentBlockIndex);
           })
           .then(function() {
-            if (self.autoRun) {
-              if (nextBlockIndex < blockCount && !flagObjectNotFound) {
-                logger.info('[BOSWorker] There is more block hases...');
-                return self.synchronizeToBlockchain();
-              } else {
-                logger.info('[BOSWorker] There is no more block hases. A new verification will occurr in 10s');
-                setTimeout(function() {
-                  self.synchronizeToBlockchain();
-                }, 10 * 1000);
-              }
+            if (nextBlockIndex < blockCount) {
+              logger.info('[BOSWorker] There is more block hases...', nextBlockIndex, blockCount);
+              return self.synchronizeToBlockchain();
             }
 
             logger.info('[BOSWorker] Blockchain Observer Service has finished this execution');
@@ -297,14 +293,6 @@ module.exports = function(dependencies, autoRun) {
           .then(resolve)
           .catch(function(r) {
             logger.error('[BOSWorker] An error has occurred whiling synchronizing to daemon', JSON.stringify(r));
-
-            if (self.autoRun) {
-              logger.info('[BOSWorker] A new verification will occurr in 10s');
-              setTimeout(function() {
-                self.synchronizeToBlockchain();
-              }, 10 * 1000);
-            }
-
             //even if a error has occurred the process must continue
             resolve(true);
           });

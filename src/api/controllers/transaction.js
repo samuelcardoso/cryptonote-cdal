@@ -72,7 +72,9 @@ module.exports = function() {
         req.body.addresses = [req.params.address];
       }
       business.save(req.body)
-        .then(rh.ok)
+        .then(function(r) {
+          rh.created(r);
+        })
         .catch(rh.error);
     },
 
