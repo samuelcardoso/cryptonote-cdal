@@ -1,26 +1,25 @@
 var Promise         = require('promise');
 var logger          = require('../config/logger');
-var settings        = require('../config/settings');
 
 module.exports = function(dependencies) {
   var transactionBO = dependencies.transactionBO;
   var addressBO = dependencies.addressBO;
   var requestHelper = dependencies.requestHelper;
+  var configurationBO = dependencies.configurationBO;
 
   return {
     dependencies: dependencies,
     isRunning: false,
-    transactionNotificationAPI: settings.transactionNotificationAPI,
 
     run: function() {
       var self = this;
 
       if (!this.isRunning) {
-        this.isRunning = true;
+        self.isRunning = true;
 
         return this.notifyConfirmedTransactions()
           .then(function() {
-              this.isRunning = false;
+              self.isRunning = false;
 
               logger.info('[TNSWorker] A new verification will occurr in 10s');
               setTimeout(function() {
@@ -33,16 +32,21 @@ module.exports = function(dependencies) {
     },
 
     notifyConfirmedTransactions: function() {
-      var self = this;
       var chain = Promise.resolve();
       var addresses = [];
       var transactions = null;
+      var transactionNotificationAPI = null;
 
       return new Promise(function(resolve) {
         logger.info('[TNSWorker] Starting Transaction Notifier Service');
 
         chain
           .then(function() {
+            return configurationBO.getByKey('transactionNotificationAPI');
+          })
+          .then(function(r) {
+            transactionNotificationAPI = r.value;
+
             logger.info('[TNSWorker] Getting unnotified transactions from database');
             return transactionBO.getTransactionsToNotify();
           })
@@ -76,7 +80,7 @@ module.exports = function(dependencies) {
             for (var i = 0; i < transactions.length; i++) {
               logger.info('[TNSWorker] Notifiyng about the transaction', transactions[i]);
               p.push(requestHelper.postJSON(
-                self.transactionNotificationAPI.endpoint,
+                transactionNotificationAPI,
                 [],
                 transactions[i],
                 []));

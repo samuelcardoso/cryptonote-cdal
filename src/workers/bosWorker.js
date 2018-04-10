@@ -15,11 +15,11 @@ module.exports = function(dependencies) {
       var self = this;
 
       if (!this.isRunning) {
-        this.isRunning = true;
+        self.isRunning = true;
 
         return this.synchronizeToBlockchain()
           .then(function() {
-              this.isRunning = false;
+              self.isRunning = false;
 
               logger.info('[BOSWorker] A new verification will occurr in 10s');
               setTimeout(function() {
@@ -141,9 +141,8 @@ module.exports = function(dependencies) {
           })
           .then(function() {
             logger.info('[BOSWorker] The currentBlockIndex value is valid', currentBlockIndex);
-            return true;
+            resolve(true);
           })
-          .then(resolve)
           .catch(function() {
             logger.info('[BOSWorker] The currentBlockIndex is not valid yet, so the value will be decremented');
             resolve(false);

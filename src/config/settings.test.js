@@ -6,7 +6,7 @@ module.exports = {
     defaultSettings: {
       minimumConfirmations: 3,
       minimumAddressPoolSize: 10,
-      transactionNotificationAPI: 'http://localhost/transactions-notifications',
+      transactionNotificationAPI: 'http://localhost:3001/v1/transactions/notifications',
       daemonEndpoint: 'http://nbrw-dev.kernelits.net:20264/json_rpc',
       currentBlockIndex: 0,
       defaultTransactionsBlockCount: 5000,

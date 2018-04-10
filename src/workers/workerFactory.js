@@ -29,7 +29,8 @@ module.exports = {
           transactionBO: BOFactory.getBO('transaction'),
           requestHelper: new RequestHelper({
             request: require('request')
-          })
+          }),
+          configurationBO: BOFactory.getBO('configuration')
         });
       case 'bos':
         return new BOSWorker({
