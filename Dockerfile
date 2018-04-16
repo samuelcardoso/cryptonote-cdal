@@ -1,14 +1,25 @@
-FROM node:9.2.0
+FROM node:9-alpine
 
-RUN mkdir /app
+ARG VERSION=master
+ENV VERSION=${VERSION}
 
-WORKDIR /app
+LABEL maintainer="gleisson.assis@gmail.com"
+LABEL source="https://github.com/gleissonassis/cryptonote-cdal.git"
+LABEL version="${VERSION}"
 
-COPY . .
+ADD entrypoint.sh /
 
-RUN npm i && \
-    chmod +x start.sh
+COPY LICENSE package.json /app/
+COPY src /app/src
 
-EXPOSE 5000
+RUN mkdir -p /app/logs \
+ && echo http://dl-4.alpinelinux.org/alpine/edge/testing >> /etc/apk/repositories \
+ && apk add --no-cache mongodb make gcc g++ git python py-pip \
+ && pip install supervisor \
+ && cd /app \
+ && npm install --production \
+ && chmod +x /entrypoint.sh
 
-CMD ["/app/start.sh"]
+WORKDIR /
+
+ENTRYPOINT ["/entrypoint.sh"]
