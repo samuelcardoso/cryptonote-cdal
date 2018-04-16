@@ -1,6 +1,6 @@
 TAG ?= dev
 VERSION ?= master
-NAMESPACE ?= jayderfranca
+NAMESPACE ?= gleissonassis
 IMAGE ?= cryptonote-cdal
 CONTAINER ?= cryptonote-cdal
 
