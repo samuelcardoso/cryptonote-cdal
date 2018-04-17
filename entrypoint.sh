@@ -8,17 +8,16 @@ MONGODB_CONF=/data/config/mongod.conf
 
 # create base directory of mongodb
 [ ! -d /data ] && mkdir /data
-[ ! -d /data/config ] && mkdir /data/config
+[ ! -d /data/configdb ] && mkdir /data/configdb
 [ ! -d /data/db ] && mkdir /data/db
-[ ! -d /data/logs ] && mkdir /data/logs
 
 # create base config file of mongodb
 if [ ! -f $MONGODB_CONF ]; then
   echo "# mongod.conf" > $MONGODB_CONF
   echo "dbpath=/data/db" >> $MONGODB_CONF
-  echo "logpath=/data/logs/mongod.log" >> $MONGODB_CONF
+  echo "logpath=/data/mongod.log" >> $MONGODB_CONF
   echo "logappend=true" >> $MONGODB_CONF
-  echo "bind_ip = 127.0.0.1" >> $MONGODB_CONF
+  echo "bind_ip=127.0.0.1" >> $MONGODB_CONF
 fi
 
 # define owner of data
