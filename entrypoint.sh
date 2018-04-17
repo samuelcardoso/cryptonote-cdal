@@ -49,23 +49,30 @@ supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface
 [supervisorctl]
 serverurl=unix:///tmp/supervisor.sock
 
+[eventlistener:dependentstartup]
+command=/usr/bin/supervisord-dependent-startup
+autostart=true
+events=PROCESS_STATE
+
 [program:mongod]
 command=/usr/bin/mongod --config /data/config/mongod.conf
 user=mongodb
 directory=/data
-autostart=true
+autostart=false
 autorestart=true
-priority=100
+startsecs=10
+dependent_startup=true
 
 [program:node]
 command=/usr/local/bin/node /app/src/server.js
 directory=/app
-autostart=true
+autostart=false
 autorestart=true
 startretries=20
-stderr_logfile=/app/logs/errors.log
-stdout_logfile=/app/logs/output.log
-priority=200
+stderr_logfile=/app/log/errors.log
+stdout_logfile=/app/log/output.log
+dependent_startup=true
+dependent_startup_wait_for=mongod:running
 EOF
 
 # start supervisord

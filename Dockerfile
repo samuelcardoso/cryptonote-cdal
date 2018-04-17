@@ -12,10 +12,11 @@ ADD entrypoint.sh /
 COPY LICENSE package.json /app/
 COPY src /app/src
 
-RUN mkdir -p /app/logs \
+RUN mkdir -p /app/log \
  && echo http://dl-4.alpinelinux.org/alpine/edge/testing >> /etc/apk/repositories \
  && apk add --no-cache mongodb make gcc g++ git python py-pip \
  && pip install supervisor \
+ && pip install git+https://github.com/bendikro/supervisord-dependent-startup.git@v1.1.0 \
  && cd /app \
  && npm install --production \
  && chmod +x /entrypoint.sh
