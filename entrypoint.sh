@@ -4,7 +4,7 @@
 SUPERVISORD_CONF=/etc/supervisord.conf
 
 # file configuration of mongodb
-MONGODB_CONF=/data/config/mongod.conf
+MONGODB_CONF=/etc/mongod.conf
 
 # create base directory of mongodb
 [ ! -d /data ] && mkdir /data
@@ -54,7 +54,7 @@ autostart=true
 events=PROCESS_STATE
 
 [program:mongod]
-command=/usr/bin/mongod --config /data/config/mongod.conf
+command=/usr/bin/mongod --config /etc/mongod.conf
 user=mongodb
 directory=/data
 autostart=false
