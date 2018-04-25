@@ -69,7 +69,10 @@ module.exports = function(dependencies) {
             return Promise.all(p);
           })
           .then(resolve)
-          .catch(reject);
+          .catch(function(r) {
+            logger.error('[AAPMSWorker] An error has occurred while synchronizing addresses');
+            reject(r);
+          });
       });
     },
 

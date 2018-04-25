@@ -14,9 +14,7 @@ module.exports = function() {
 
         chain
           .then(function() {
-            return aapmsWorker.run();
-          })
-          .then(function() {
+            aapmsWorker.run();
             tnsWorker.run();
             bosWorker.run();
           })
@@ -49,6 +47,9 @@ module.exports = function() {
       this.configureDefaultSettings()
         .then(function() {
           return self.runWorkers();
+        })
+        .catch(function() {
+          logger.error("There was an error configuring the application");
         });
     }
   };
