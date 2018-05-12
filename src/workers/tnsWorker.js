@@ -79,11 +79,20 @@ module.exports = function(dependencies) {
 
             for (var i = 0; i < transactions.length; i++) {
               logger.info('[TNSWorker] Notifiyng about the transaction', transactions[i]);
-              p.push(requestHelper.postJSON(
-                transactionNotificationAPI,
-                [],
-                transactions[i],
-                []));
+              var notificationPromise = new Promise(function(resolve) {
+                requestHelper.postJSON(
+                  transactionNotificationAPI,
+                  [],
+                  transactions[i],
+                  [200])
+                  .then(function(){
+                    resolve({isError: false});
+                  })
+                  .catch(function(e) {
+                    resolve({isError: true, error: e});
+                  });
+              });
+              p.push(notificationPromise);
             }
 
             return Promise.all(p);
@@ -94,12 +103,16 @@ module.exports = function(dependencies) {
             logger.info('[TNSWorker] Updating the flag is notified for the transactions', transactions.length);
 
             for (var i = 0; i < transactions.length; i++) {
-              if (!transactions[i].notifications.creation.isNotified) {
-                logger.info('[TNSWorker] Updating the flag notifications.confirmation.isNotified for the transaction', transactions[i].id);
-                p.push(transactionBO.updateIsCreationNotifiedFlag(transactions[i].id));
+              if (!r[i].isError) {
+                if (!transactions[i].notifications.creation.isNotified) {
+                  logger.info('[TNSWorker] Updating the flag notifications.confirmation.isNotified for the transaction', transactions[i].id);
+                  p.push(transactionBO.updateIsCreationNotifiedFlag(transactions[i].id));
+                } else {
+                  logger.info('[TNSWorker] Updating the flag notifications.confirmation.isNotified for the transaction', transactions[i].id);
+                  p.push(transactionBO.updateIsConfirmationNotifiedFlag(transactions[i].id));
+                }
               } else {
-                logger.info('[TNSWorker] Updating the flag notifications.confirmation.isNotified for the transaction', transactions[i].id);
-                p.push(transactionBO.updateIsConfirmationNotifiedFlag(transactions[i].id));
+                logger.info('[TNSWorker] The notification has failed to ', transactionNotificationAPI, transactions[i].id, r[i].error);
               }
             }
 
