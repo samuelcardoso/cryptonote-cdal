@@ -8,6 +8,8 @@
   },
   "scripts": {
     "start": "node src/server.js",
+    "ALLOY": "DB_NAME=alloy-cdal DAEMON_ADDRESS=35.231.95.227:8070 PORT=40001 node src/server.js",
+    "start": "node src/server.js",
     "test": "NODE_ENV=test istanbul cover --reporter=html ./node_modules/mocha/bin/_mocha -- -R spec --recursive"
   },
   "repository": {

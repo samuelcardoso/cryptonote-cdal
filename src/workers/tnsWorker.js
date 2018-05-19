@@ -97,12 +97,14 @@ module.exports = function(dependencies) {
 
             return Promise.all(p);
           })
-          .then(function() {
+          .then(function(r) {
             var p = [];
 
             logger.info('[TNSWorker] Updating the flag is notified for the transactions', transactions.length);
 
             for (var i = 0; i < transactions.length; i++) {
+              logger.info('[TNSWorker] Notifiyng the transaction', JSON.stringify(transactions[i]));
+
               if (!r[i].isError) {
                 if (!transactions[i].notifications.creation.isNotified) {
                   logger.info('[TNSWorker] Updating the flag notifications.confirmation.isNotified for the transaction', transactions[i].id);
