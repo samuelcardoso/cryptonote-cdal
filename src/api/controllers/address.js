@@ -67,5 +67,19 @@ module.exports = function() {
         .then(rh.ok)
         .catch(rh.error);
     },
+
+    getAddressBalance: function(req, res) {
+      var rh = new HTTPResponseHelper(req, res);
+
+      business.getByAddress(req.params.ownerId, req.params.address)
+        .then(function(address) {
+          return business.updateBalance(address);
+        })
+        .then(function() {
+          return business.getAddressBalance(req.params.address);
+        })
+        .then(rh.ok)
+        .catch(rh.error);
+    }
   };
 };

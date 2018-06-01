@@ -290,5 +290,22 @@ module.exports = function(dependencies) {
           .catch(reject);
       });
     },
+
+    getAddressBalance: function(address) {
+      var self = this;
+
+      return new Promise(function(resolve, reject) {
+        self.getByAddress(null, address)
+          .then(function(r) {
+            if (r) {
+              return r.balance;
+            } else {
+              return null;
+            }
+          })
+          .then(resolve)
+          .catch(reject);
+      });
+    }
   };
 };
