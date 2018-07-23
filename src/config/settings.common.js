@@ -12,8 +12,8 @@ module.exports = {
     },
 
     defaultSettings: {
-      minimumConfirmations: 3,
-      minimumAddressPoolSize: 0,
+      minimumConfirmations: process.env.MIN_CONFIRMATIONS || 3,
+      minimumAddressPoolSize: process.env.MIN_ADDRESS_POOL_SIZE || 100,
       transactionNotificationAPI: process.env.NOTIFICATION_ADDRESS || 'http://localhost:3000/v1/transactions/notifications',
       daemonEndpoint: util.format('http://%s/json_rpc', process.env.DAEMON_ADDRESS || '18.216.105.158:20264'),
       currentBlockIndex: 0,
