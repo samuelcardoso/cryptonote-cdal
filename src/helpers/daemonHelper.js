@@ -1,4 +1,5 @@
 var logger        = require('../config/logger');
+var settings      = require('../config/settings');
 
 module.exports = function(dependencies) {
   var requestHelper = dependencies.requestHelper;
@@ -85,7 +86,7 @@ module.exports = function(dependencies) {
 
     sendTransaction: function(anonymity, fee, unlockTime, paymentId, addresses, transfers, changeAddress) {
       return this._main('sendTransaction', {
-        anonymity: anonymity,
+        anonymity: parseInt(settings.defaultSettings.minimumAnonymity) > anonymity ? parseInt(settings.defaultSettings.minimumAnonymity) : anonymity,
         fee: fee,
         unlockTime: unlockTime,
         paymentId: paymentId,
