@@ -91,7 +91,8 @@ module.exports = function(dependencies) {
         paymentId: paymentId,
         addresses: addresses,
         transfers: transfers,
-        changeAddress: changeAddress
+        changeAddress: changeAddress,
+        mixin: 1
       });
     },
 
