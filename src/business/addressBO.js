@@ -217,7 +217,6 @@ module.exports = function(dependencies) {
             addressEntity.balance.locked = r.result.lockedAmount;
             addressEntity.isEnabled = true;
             addressEntity.updatedAt = dateHelper.getNow();
-            console.log(addressEntity);
             return addressDAO.update(addressEntity);
           })
           .then(function(r) {

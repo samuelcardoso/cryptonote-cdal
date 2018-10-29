@@ -73,7 +73,7 @@ module.exports = function() {
 
       business.getByAddress(req.params.ownerId, req.params.address)
         .then(function(address) {
-          return business.updateBalance(address);
+          return business.updateBalance(address.address);
         })
         .then(function() {
           return business.getAddressBalance(req.params.address);
