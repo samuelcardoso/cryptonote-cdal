@@ -93,7 +93,7 @@ module.exports = function(dependencies) {
         addresses: addresses,
         transfers: transfers,
         changeAddress: changeAddress,
-        mixin: 1
+        mixin: parseInt(settings.defaultSettings.minimumMixin) < 0 ? 0 : parseInt(settings.defaultSettings.minimumMixin)
       });
     },
 
